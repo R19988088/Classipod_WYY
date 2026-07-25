@@ -32,11 +32,14 @@ class DeviceScreen extends ConsumerWidget {
             width: 5,
           ),
         ),
-        child: MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(size: Size(size.width - 40 - 10, Constants.screenHeight)),
-          child: child,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(5),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              size: Size(size.width - 40 - 10, Constants.screenHeight),
+            ),
+            child: child,
+          ),
         ),
       ),
     );

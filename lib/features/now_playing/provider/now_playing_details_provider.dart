@@ -24,7 +24,8 @@ class NowPlayingDetailsNotifier extends Notifier<NowPlayingModel> {
       player.currentIndexStream.listen((newIndex) {
         if (newIndex != null &&
             newIndex != state.currentIndex &&
-            state.metadataList.isNotEmpty) {
+            newIndex >= 0 &&
+            newIndex < state.metadataList.length) {
           state = state.copyWith(
             currentIndex: newIndex,
             currentMetadata: state.metadataList[newIndex],

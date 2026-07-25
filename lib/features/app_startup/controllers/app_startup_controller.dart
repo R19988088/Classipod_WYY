@@ -17,6 +17,14 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 final appStartupControllerProvider = FutureProvider<void>((ref) async {
+  if (!kIsWeb) {
+    JustAudioMediaKit.ensureInitialized(
+      android: Platform.isAndroid,
+      linux: Platform.isLinux,
+      windows: Platform.isWindows,
+    );
+    JustAudioMediaKit.title = 'ClassiPod';
+  }
   await Future.wait([
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ...[
       SystemChrome.setPreferredOrientations([
@@ -42,10 +50,6 @@ final appStartupControllerProvider = FutureProvider<void>((ref) async {
   await Hive.openBox<ExcludeDirectoryModel>(
     Constants.excludedDirectoriesBoxName,
   );
-  if (!kIsWeb && (Platform.isWindows || Platform.isLinux)) {
-    JustAudioMediaKit.ensureInitialized();
-    JustAudioMediaKit.title = 'ClassiPod';
-  }
   ref
       .read(settingsPreferencesControllerProvider.notifier)
       .setAudioSource(isOnlineAudioSource: kIsWeb);

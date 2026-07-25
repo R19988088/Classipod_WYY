@@ -6,6 +6,9 @@ import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart'
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
+import 'package:classipod/features/settings/models/netease_audio_format.dart';
+import 'package:classipod/features/settings/models/netease_flac_quality.dart';
+import 'package:classipod/features/settings/models/netease_mp3_bitrate.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -49,6 +52,27 @@ class SettingsPreferencesRepository {
           SharedPreferencesKeys.musicSource.name,
         ) ??
         MusicSource.netease.name;
+  }
+
+  String getNeteaseAudioFormat() {
+    return _sharedPreferencesWithCache.getString(
+          SharedPreferencesKeys.neteaseAudioFormat.name,
+        ) ??
+        NeteaseAudioFormat.mp3.name;
+  }
+
+  String getNeteaseMp3Bitrate() {
+    return _sharedPreferencesWithCache.getString(
+          SharedPreferencesKeys.neteaseMp3Bitrate.name,
+        ) ??
+        NeteaseMp3Bitrate.kbps320.name;
+  }
+
+  String getNeteaseFlacQuality() {
+    return _sharedPreferencesWithCache.getString(
+          SharedPreferencesKeys.neteaseFlacQuality.name,
+        ) ??
+        NeteaseFlacQuality.lossless.name;
   }
 
   String getClickWheelSensitivity() {
@@ -141,6 +165,27 @@ class SettingsPreferencesRepository {
     return _sharedPreferencesWithCache.setString(
       SharedPreferencesKeys.musicSource.name,
       musicSourceName,
+    );
+  }
+
+  Future<void> setNeteaseAudioFormat({required String formatName}) async {
+    return _sharedPreferencesWithCache.setString(
+      SharedPreferencesKeys.neteaseAudioFormat.name,
+      formatName,
+    );
+  }
+
+  Future<void> setNeteaseMp3Bitrate({required String bitrateName}) async {
+    return _sharedPreferencesWithCache.setString(
+      SharedPreferencesKeys.neteaseMp3Bitrate.name,
+      bitrateName,
+    );
+  }
+
+  Future<void> setNeteaseFlacQuality({required String qualityName}) async {
+    return _sharedPreferencesWithCache.setString(
+      SharedPreferencesKeys.neteaseFlacQuality.name,
+      qualityName,
     );
   }
 

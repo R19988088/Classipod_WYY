@@ -3,6 +3,12 @@ import 'dart:async';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+int nextSleepTimerMinutes(int current) => switch (current) {
+  0 => 60,
+  60 => 120,
+  _ => 0,
+};
+
 final sleepTimerControllerProvider =
     NotifierProvider<SleepTimerController, int>(SleepTimerController.new);
 
@@ -15,11 +21,8 @@ class SleepTimerController extends Notifier<int> {
     return 0;
   }
 
-  void setMinutes(int minutes) {
-    if (minutes != 60 && minutes != 120) {
-      throw ArgumentError.value(minutes, 'minutes');
-    }
-    state = state == minutes ? 0 : minutes;
+  void cycle() {
+    state = nextSleepTimerMinutes(state);
     _timer?.cancel();
     _timer = state == 0
         ? null

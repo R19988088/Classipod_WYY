@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/now_playing/models/now_playing_model.dart';
@@ -16,9 +18,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
 
 class _RecordingAudioPlayer extends AudioPlayer {
+  final StreamController<int?> _currentIndexController =
+      StreamController<int?>.broadcast(sync: true);
   int? loadedInitialIndex;
   int shuffleCount = 0;
   int nextCount = 0;
+  void Function()? beforeSetAudioSources;
+  Error? setAudioSourcesError;
+
+  @override
+  Stream<int?> get currentIndexStream => _currentIndexController.stream;
+
+  void emitCurrentIndex(int index) => _currentIndexController.add(index);
 
   @override
   Future<Duration?> setAudioSources(
@@ -28,6 +39,8 @@ class _RecordingAudioPlayer extends AudioPlayer {
     Duration? initialPosition,
     ShuffleOrder? shuffleOrder,
   }) async {
+    beforeSetAudioSources?.call();
+    if (setAudioSourcesError case final error?) throw error;
     loadedInitialIndex = initialIndex;
     return Duration.zero;
   }
@@ -46,6 +59,12 @@ class _RecordingAudioPlayer extends AudioPlayer {
 
   @override
   Future<void> play() async {}
+
+  @override
+  Future<void> dispose() async {
+    await _currentIndexController.close();
+    await super.dispose();
+  }
 }
 
 class _NeteaseSettingsController extends SettingsPreferencesControllerNotifier {
@@ -92,6 +111,82 @@ void main() {
     expect(
       container.read(nowPlayingDetailsProvider).currentMetadata?.trackName,
       'Selected',
+    );
+  });
+
+  test(
+    'metadata is ready before the player exposes its initial index',
+    () async {
+      final player = _RecordingAudioPlayer();
+      final container = ProviderContainer(
+        overrides: [audioPlayerProvider.overrideWithValue(player)],
+      );
+      addTearDown(() async {
+        container.dispose();
+        await player.dispose();
+      });
+      final songs = [
+        MusicMetadata(trackName: 'First', filePath: 'first.mp3'),
+        MusicMetadata(trackName: 'Selected', filePath: 'selected.mp3'),
+      ];
+      container.read(nowPlayingDetailsProvider);
+      String? metadataWhenPlayerLoaded;
+      player.beforeSetAudioSources = () {
+        player.emitCurrentIndex(1);
+        metadataWhenPlayerLoaded = container
+            .read(nowPlayingDetailsProvider)
+            .currentMetadata
+            ?.trackName;
+      };
+
+      await container
+          .read(audioPlayerServiceProvider.notifier)
+          .setAudioSource(musicMetadataList: songs, initialIndex: 1);
+      expect(metadataWhenPlayerLoaded, 'Selected');
+    },
+  );
+
+  test('an out-of-range player index keeps the current metadata', () async {
+    final player = _RecordingAudioPlayer();
+    final container = ProviderContainer(
+      overrides: [audioPlayerProvider.overrideWithValue(player)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await player.dispose();
+    });
+    final song = MusicMetadata(trackName: 'Only', filePath: 'only.mp3');
+    container
+        .read(nowPlayingDetailsProvider.notifier)
+        .setNewMetadataList(newMetadataList: [song]);
+
+    player.emitCurrentIndex(9);
+    await Future<void>.delayed(Duration.zero);
+
+    expect(container.read(nowPlayingDetailsProvider).currentMetadata, song);
+    expect(container.read(nowPlayingDetailsProvider).currentIndex, 0);
+  });
+
+  test('player source errors are returned to the screen', () async {
+    final player = _RecordingAudioPlayer()
+      ..setAudioSourcesError = StateError('source failed');
+    final container = ProviderContainer(
+      overrides: [audioPlayerProvider.overrideWithValue(player)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await player.dispose();
+    });
+
+    await expectLater(
+      container
+          .read(audioPlayerServiceProvider.notifier)
+          .setAudioSource(
+            musicMetadataList: [
+              MusicMetadata(trackName: 'Song', filePath: 'song.mp3'),
+            ],
+          ),
+      throwsStateError,
     );
   });
 

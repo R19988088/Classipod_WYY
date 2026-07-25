@@ -47,4 +47,17 @@ void main() {
 
     expect(item.artUri, Uri.parse('https://image.example/cover.jpg'));
   });
+
+  test('Netease temporary URLs bypass the persistent file cache', () {
+    final source = MusicMetadata(
+      trackName: 'Remote',
+      filePath: 'https://m701.music.126.net/song.mp3',
+      thumbnailPath: 'https://image.example/cover.jpg',
+      isOnDevice: false,
+    ).toAudioSource();
+
+    expect(source, isA<UriAudioSource>());
+    // ignore: experimental_member_use
+    expect(source, isNot(isA<LockCachingAudioSource>()));
+  });
 }

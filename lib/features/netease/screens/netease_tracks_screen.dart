@@ -7,6 +7,7 @@ import 'package:classipod/features/music/songs/widgets/condensed_song_list_tile.
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/models/now_playing_model.dart';
+import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,9 +76,16 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
       _error = null;
     });
     try {
+      final settings = ref.read(settingsPreferencesControllerProvider);
       final metadata = await ref
           .read(neteaseServiceProvider)
-          .playableTracks(_tracks, preferredTrackId: _tracks[index].id);
+          .playableTracks(
+            _tracks,
+            preferredTrackId: _tracks[index].id,
+            format: settings.neteaseAudioFormat,
+            mp3Bitrate: settings.neteaseMp3Bitrate,
+            flacQuality: settings.neteaseFlacQuality,
+          );
       final targetId = int.parse(_tracks[index].id);
       final playableIndex = metadata.indexWhere(
         (item) => item.originalSongIndex == targetId,

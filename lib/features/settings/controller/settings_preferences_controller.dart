@@ -13,6 +13,9 @@ import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart'
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
+import 'package:classipod/features/settings/models/netease_audio_format.dart';
+import 'package:classipod/features/settings/models/netease_flac_quality.dart';
+import 'package:classipod/features/settings/models/netease_mp3_bitrate.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
@@ -69,6 +72,15 @@ class SettingsPreferencesControllerNotifier
       musicSource: MusicSource.values.byName(
         settingsPreferencesRepository.getMusicSource(),
       ),
+      neteaseAudioFormat: NeteaseAudioFormat.fromName(
+        settingsPreferencesRepository.getNeteaseAudioFormat(),
+      ),
+      neteaseMp3Bitrate: NeteaseMp3Bitrate.fromName(
+        settingsPreferencesRepository.getNeteaseMp3Bitrate(),
+      ),
+      neteaseFlacQuality: NeteaseFlacQuality.fromName(
+        settingsPreferencesRepository.getNeteaseFlacQuality(),
+      ),
     );
   }
 
@@ -105,6 +117,27 @@ class SettingsPreferencesControllerNotifier
         .read(settingsPreferencesRepositoryProvider)
         .setMusicSource(musicSourceName: musicSource.name);
     state = state.copyWith(musicSource: musicSource);
+  }
+
+  Future<void> toggleNeteaseAudioFormat() async {
+    final format = state.neteaseAudioFormat.next;
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setNeteaseAudioFormat(formatName: format.name);
+    state = state.copyWith(neteaseAudioFormat: format);
+  }
+
+  Future<void> toggleNeteaseBitrate() async {
+    final repository = ref.read(settingsPreferencesRepositoryProvider);
+    if (state.neteaseAudioFormat == NeteaseAudioFormat.mp3) {
+      final bitrate = state.neteaseMp3Bitrate.next;
+      await repository.setNeteaseMp3Bitrate(bitrateName: bitrate.name);
+      state = state.copyWith(neteaseMp3Bitrate: bitrate);
+    } else {
+      final quality = state.neteaseFlacQuality.next;
+      await repository.setNeteaseFlacQuality(qualityName: quality.name);
+      state = state.copyWith(neteaseFlacQuality: quality);
+    }
   }
 
   Future<void> showAppTutorial() async {
@@ -343,6 +376,15 @@ class SettingsPreferencesControllerNotifier
     await ref
         .read(settingsPreferencesRepositoryProvider)
         .setMusicSource(musicSourceName: MusicSource.netease.name);
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setNeteaseAudioFormat(formatName: NeteaseAudioFormat.mp3.name);
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setNeteaseMp3Bitrate(bitrateName: NeteaseMp3Bitrate.kbps320.name);
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setNeteaseFlacQuality(qualityName: NeteaseFlacQuality.lossless.name);
     await ref
         .read(settingsPreferencesRepositoryProvider)
         .setTouchScreenEnabled(isTouchScreenEnabled: true);

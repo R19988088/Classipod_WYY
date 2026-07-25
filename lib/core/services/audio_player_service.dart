@@ -100,15 +100,18 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
     int initialIndex = 0,
   }) async {
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final List<AudioSource> songSourcePlaylist = [];
-      int i = 0;
-      try {
-        for (final musicMetadata in musicMetadataList) {
-          songSourcePlaylist.add(musicMetadata.toAudioSource());
-          i = i + 1;
-        }
-      } catch (_) {}
+    final nextState = await AsyncValue.guard(() async {
+      final songSourcePlaylist = musicMetadataList
+          .map((metadata) => metadata.toAudioSource())
+          .toList(growable: false);
+
+      ref
+          .read(nowPlayingDetailsProvider.notifier)
+          .setNewMetadataList(
+            nowPlayingType: nowPlayingType,
+            newMetadataList: musicMetadataList,
+            initialIndex: initialIndex,
+          );
 
       await ref
           .read(audioPlayerProvider)
@@ -118,15 +121,11 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
             initialPosition: Duration.zero,
             shuffleOrder: DefaultShuffleOrder(),
           );
-
-      ref
-          .read(nowPlayingDetailsProvider.notifier)
-          .setNewMetadataList(
-            nowPlayingType: nowPlayingType,
-            newMetadataList: musicMetadataList,
-            initialIndex: initialIndex,
-          );
     });
+    state = nextState;
+    if (nextState.hasError) {
+      Error.throwWithStackTrace(nextState.error!, nextState.stackTrace!);
+    }
   }
 
   Future<void> nextSong() async {

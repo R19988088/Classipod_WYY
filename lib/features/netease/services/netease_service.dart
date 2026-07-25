@@ -6,6 +6,10 @@ import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/services/netease_crypto.dart';
 import 'package:classipod/features/netease/services/netease_parser.dart';
+import 'package:classipod/features/netease/services/netease_playback_resolver.dart';
+import 'package:classipod/features/settings/models/netease_audio_format.dart';
+import 'package:classipod/features/settings/models/netease_flac_quality.dart';
+import 'package:classipod/features/settings/models/netease_mp3_bitrate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -178,30 +182,64 @@ class NeteaseService {
   Future<List<MusicMetadata>> playableTracks(
     List<NeteaseTrack> tracks, {
     String? preferredTrackId,
+    NeteaseAudioFormat format = NeteaseAudioFormat.mp3,
+    NeteaseMp3Bitrate mp3Bitrate = NeteaseMp3Bitrate.kbps320,
+    NeteaseFlacQuality flacQuality = NeteaseFlacQuality.lossless,
   }) async {
     if (tracks.isEmpty) return const [];
     final ids = tracks.map((track) => int.parse(track.id)).toList();
     final urls = <String, String>{};
+    (Object, StackTrace)? batchFailure;
     final Future<String?> preferredUrl = preferredTrackId == null
         ? Future.value()
         : playbackUrl(
             preferredTrackId,
+            format: format,
+            mp3Bitrate: mp3Bitrate,
+            flacQuality: flacQuality,
           ).then<String?>((url) => url).catchError((_) => null);
     for (var offset = 0; offset < ids.length; offset += 200) {
       final page = ids.sublist(offset, min(offset + 200, ids.length));
-      final root = await _postWeapi(
-        'https://music.163.com/weapi/song/enhance/player/url',
-        {'ids': jsonEncode(page), 'br': '320000'},
-      );
-      _requireSuccess(root, '获取播放地址');
-      final data = root['data'];
-      if (data is! List) throw const FormatException('播放响应缺少 data');
-      for (final item in data.whereType<Map>()) {
-        final id = item['id'];
-        final url = item['url'];
-        if (id != null && url is String && url.isNotEmpty) {
-          urls['$id'] = url.replaceFirst('http://', 'https://');
+      try {
+        final root = switch (format) {
+          NeteaseAudioFormat.mp3 => await _postWeapi(
+            'https://music.163.com/weapi/song/enhance/player/url',
+            {'ids': jsonEncode(page), 'br': '${mp3Bitrate.apiValue}'},
+          ),
+          NeteaseAudioFormat.flac => await requestNeteaseEapiWithSessionRetry(
+            request: () => _postEapi(
+              'https://interface.music.163.com/eapi/song/enhance/player/url/v1',
+              {
+                'ids': jsonEncode(page),
+                'level': flacQuality.name,
+                'encodeType': 'flac',
+                if (flacQuality == NeteaseFlacQuality.sky) 'immerseType': 'c51',
+              },
+            ),
+            warmSession: () async {
+              await _get(Uri.parse('https://music.163.com/'));
+            },
+            hasLogin:
+                _cookies.containsKey('MUSIC_U') ||
+                _cookies.containsKey('MUSIC_A'),
+          ),
+        };
+        _collectPlaybackUrls(root, urls);
+        if (format == NeteaseAudioFormat.flac) {
+          final missing = page.where((id) => !urls.containsKey('$id')).toList();
+          if (missing.isNotEmpty) {
+            _collectPlaybackUrls(
+              await _postWeapi(
+                'https://music.163.com/weapi/song/enhance/player/url',
+                {'ids': jsonEncode(missing), 'br': '${mp3Bitrate.apiValue}'},
+              ),
+              urls,
+            );
+          }
         }
+      } catch (error, stackTrace) {
+        batchFailure = (error, stackTrace);
+        break;
       }
     }
     final resolvedPreferredUrl = await preferredUrl;
@@ -209,6 +247,9 @@ class NeteaseService {
       urls[preferredTrackId] = resolvedPreferredUrl;
     } else if (preferredTrackId != null &&
         !urls.containsKey(preferredTrackId)) {
+      if (batchFailure case (final error, final stackTrace)) {
+        Error.throwWithStackTrace(error, stackTrace);
+      }
       throw StateError('该曲目当前账号无播放权限');
     }
     return [
@@ -230,21 +271,50 @@ class NeteaseService {
     ];
   }
 
-  Future<String> playbackUrl(String trackId) async {
-    try {
-      return NeteaseParser.playbackUrl(
-        await _postEapi(
-          'https://interface.music.163.com/eapi/song/enhance/player/url/v1',
-          {'ids': '[$trackId]', 'level': 'lossless', 'encodeType': 'flac'},
-        ),
-      );
-    } catch (_) {
-      return NeteaseParser.playbackUrl(
-        await _postWeapi(
-          'https://music.163.com/weapi/song/enhance/player/url',
-          {'ids': '[$trackId]', 'br': '320000'},
-        ),
-      );
+  Future<String> playbackUrl(
+    String trackId, {
+    NeteaseAudioFormat format = NeteaseAudioFormat.mp3,
+    NeteaseMp3Bitrate mp3Bitrate = NeteaseMp3Bitrate.kbps320,
+    NeteaseFlacQuality flacQuality = NeteaseFlacQuality.lossless,
+  }) async {
+    await _restore();
+    return NeteasePlaybackResolver(
+      format: format,
+      flacQuality: flacQuality,
+      requestEapi: (level) => _postEapi(
+        'https://interface.music.163.com/eapi/song/enhance/player/url/v1',
+        {
+          'ids': '[$trackId]',
+          'level': level,
+          'encodeType': 'flac',
+          if (level == NeteaseFlacQuality.sky.name) 'immerseType': 'c51',
+        },
+      ),
+      requestWeapi: () => _postWeapi(
+        'https://music.163.com/weapi/song/enhance/player/url',
+        {'ids': '[$trackId]', 'br': '${mp3Bitrate.apiValue}'},
+      ),
+      warmSession: () async {
+        await _get(Uri.parse('https://music.163.com/'));
+      },
+      hasLogin:
+          _cookies.containsKey('MUSIC_U') || _cookies.containsKey('MUSIC_A'),
+    ).resolve();
+  }
+
+  void _collectPlaybackUrls(
+    Map<String, dynamic> root,
+    Map<String, String> urls,
+  ) {
+    _requireSuccess(root, '获取播放地址');
+    final data = root['data'];
+    if (data is! List) throw const FormatException('播放响应缺少 data');
+    for (final item in data.whereType<Map>()) {
+      final id = item['id'];
+      final url = item['url'];
+      if (id != null && url is String && url.isNotEmpty) {
+        urls['$id'] = url.replaceFirst('http://', 'https://');
+      }
     }
   }
 

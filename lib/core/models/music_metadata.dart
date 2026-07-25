@@ -292,10 +292,6 @@ class MusicMetadata extends HiveObject {
                   'Chrome/138 Mobile Safari/537.36',
             }
           : null;
-      if (!kIsWeb && headers != null) {
-        // ignore: experimental_member_use
-        return LockCachingAudioSource(uri, headers: headers, tag: tag);
-      }
       return AudioSource.uri(uri, headers: headers, tag: tag);
     }
   }

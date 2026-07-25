@@ -3,6 +3,9 @@ import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart'
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
+import 'package:classipod/features/settings/models/netease_audio_format.dart';
+import 'package:classipod/features/settings/models/netease_flac_quality.dart';
+import 'package:classipod/features/settings/models/netease_mp3_bitrate.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
 
@@ -21,6 +24,9 @@ class SettingsPreferencesModel {
   final bool fetchOnlineMusic;
   final AppTheme appTheme;
   final MusicSource musicSource;
+  final NeteaseAudioFormat neteaseAudioFormat;
+  final NeteaseMp3Bitrate neteaseMp3Bitrate;
+  final NeteaseFlacQuality neteaseFlacQuality;
 
   SettingsPreferencesModel({
     required this.languageLocaleCode,
@@ -36,6 +42,9 @@ class SettingsPreferencesModel {
     required this.immersiveMode,
     required this.appTheme,
     required this.musicSource,
+    this.neteaseAudioFormat = NeteaseAudioFormat.mp3,
+    this.neteaseMp3Bitrate = NeteaseMp3Bitrate.kbps320,
+    this.neteaseFlacQuality = NeteaseFlacQuality.lossless,
     this.fetchOnlineMusic = false,
   });
 
@@ -54,6 +63,9 @@ class SettingsPreferencesModel {
     bool? fetchOnlineMusic,
     AppTheme? appTheme,
     MusicSource? musicSource,
+    NeteaseAudioFormat? neteaseAudioFormat,
+    NeteaseMp3Bitrate? neteaseMp3Bitrate,
+    NeteaseFlacQuality? neteaseFlacQuality,
   }) {
     return SettingsPreferencesModel(
       languageLocaleCode: languageLocaleCode ?? this.languageLocaleCode,
@@ -71,6 +83,9 @@ class SettingsPreferencesModel {
       appTheme: appTheme ?? this.appTheme,
       fetchOnlineMusic: fetchOnlineMusic ?? this.fetchOnlineMusic,
       musicSource: musicSource ?? this.musicSource,
+      neteaseAudioFormat: neteaseAudioFormat ?? this.neteaseAudioFormat,
+      neteaseMp3Bitrate: neteaseMp3Bitrate ?? this.neteaseMp3Bitrate,
+      neteaseFlacQuality: neteaseFlacQuality ?? this.neteaseFlacQuality,
     );
   }
 
@@ -90,6 +105,9 @@ class SettingsPreferencesModel {
         other.immersiveMode == immersiveMode &&
         other.fetchOnlineMusic == fetchOnlineMusic &&
         other.musicSource == musicSource &&
+        other.neteaseAudioFormat == neteaseAudioFormat &&
+        other.neteaseMp3Bitrate == neteaseMp3Bitrate &&
+        other.neteaseFlacQuality == neteaseFlacQuality &&
         other.appTheme == appTheme;
   }
 
@@ -109,5 +127,8 @@ class SettingsPreferencesModel {
     appTheme,
     fetchOnlineMusic,
     musicSource,
+    neteaseAudioFormat,
+    neteaseMp3Bitrate,
+    neteaseFlacQuality,
   );
 }

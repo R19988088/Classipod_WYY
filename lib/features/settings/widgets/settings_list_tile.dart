@@ -43,7 +43,8 @@ class SettingsListTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               spacing: 5,
               children: [
-                Flexible(
+                Expanded(
+                  flex: value == null ? 1 : 7,
                   child: MarqueeText(
                     text,
                     mode: TextScrollMode.bouncing,
@@ -58,21 +59,29 @@ class SettingsListTile extends StatelessWidget {
                           color: isSelected
                               ? context.appInverseTextColor
                               : context.appPrimaryTextColor,
-                          overflow: TextOverflow.ellipsis,
                         ),
                   ),
                 ),
                 if (value != null)
-                  Text(
-                    value!,
-                    style: CupertinoTheme.of(context).textTheme.textStyle
-                        .copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? context.appInverseTextColor
-                              : context.appSecondaryTextColor,
-                        ),
+                  Expanded(
+                    flex: 3,
+                    child: MarqueeText(
+                      value!,
+                      textAlign: TextAlign.right,
+                      mode: TextScrollMode.bouncing,
+                      intervalSpaces: null,
+                      delayBefore: const Duration(seconds: 2),
+                      pauseBetween: const Duration(seconds: 2),
+                      pauseOnBounce: const Duration(seconds: 2),
+                      style: CupertinoTheme.of(context).textTheme.textStyle
+                          .copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected
+                                ? context.appInverseTextColor
+                                : context.appSecondaryTextColor,
+                          ),
+                    ),
                   ),
                 if (value == null && isSelected)
                   Icon(

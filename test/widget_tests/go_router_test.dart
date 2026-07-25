@@ -13,6 +13,7 @@ import 'package:classipod/features/app_startup/controllers/app_startup_controlle
 import 'package:classipod/features/app_startup/screens/app_startup_screen.dart';
 import 'package:classipod/features/device/controllers/sleep_timer_controller.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
@@ -125,6 +126,60 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
+  testWidgets('Netease format and bitrate only appear for Netease source', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(300, 812));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providerContainer,
+        child: const AppStartupScreen(app: ClassipodApp()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    if (providerContainer
+            .read(settingsPreferencesControllerProvider)
+            .musicSource !=
+        MusicSource.netease) {
+      await providerContainer
+          .read(settingsPreferencesControllerProvider.notifier)
+          .toggleMusicSource();
+    }
+    providerContainer.read(routerProvider).goNamed(Routes.menu.name);
+    await tester.pump(const Duration(milliseconds: 100));
+    providerContainer.read(routerProvider).goNamed(Routes.settings.name);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    final formatTile = find.byWidgetPredicate(
+      (widget) => widget is SettingsListTile && widget.text == '格式',
+    );
+    final bitrateTile = find.byWidgetPredicate(
+      (widget) => widget is SettingsListTile && widget.text == '码率',
+    );
+    final visibleTileNames = tester
+        .widgetList<SettingsListTile>(find.byType(SettingsListTile))
+        .map((tile) => tile.text)
+        .toList();
+    expect(visibleTileNames, containsAll(['格式', '码率']));
+    expect(tester.widget<SettingsListTile>(formatTile).value, 'MP3');
+    expect(tester.widget<SettingsListTile>(bitrateTile).value, '320 kbps');
+
+    await providerContainer
+        .read(settingsPreferencesControllerProvider.notifier)
+        .toggleMusicSource();
+    await tester.pump();
+    expect(formatTile, findsNothing);
+    expect(bitrateTile, findsNothing);
+
+    await providerContainer
+        .read(settingsPreferencesControllerProvider.notifier)
+        .toggleMusicSource();
+    await tester.pumpWidget(const SizedBox.shrink());
+    providerContainer.read(routerProvider).goNamed(Routes.splash.name);
+    await tester.pump(const Duration(seconds: 3));
+  });
+
   testWidgets('Parameterized route reports its configured route name', (
     WidgetTester tester,
   ) async {
@@ -152,7 +207,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('Sleep timer fades its duration choices in and out', (
+  testWidgets('Sleep timer fades through hidden, 60, 120, and hidden', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(300, 812));
@@ -165,31 +220,30 @@ void main() {
     await tester.pumpAndSettle();
 
     final button = find.byKey(const ValueKey('sleep-timer'));
-    final optionsOpacity = find.byKey(
-      const ValueKey('sleep-timer-options-opacity'),
-    );
     expect(button, findsOneWidget);
-    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
-    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 0);
+    expect(find.byIcon(CupertinoIcons.hourglass), findsNothing);
+    expect(find.text('60'), findsNothing);
 
     await tester.tap(button);
-    await tester.pump(const Duration(milliseconds: 250));
-    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 1);
-    expect(find.byKey(const ValueKey('sleep-timer-60')), findsOneWidget);
-    expect(find.byKey(const ValueKey('sleep-timer-120')), findsOneWidget);
-
-    await tester.tap(find.byKey(const ValueKey('sleep-timer-60')));
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+    expect(find.text('60'), findsOneWidget);
     expect(providerContainer.read(sleepTimerControllerProvider), 60);
 
     await tester.tap(button);
+    await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
-    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 0);
-    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+    expect(find.text('60'), findsNothing);
+    expect(find.text('120'), findsOneWidget);
+    expect(providerContainer.read(sleepTimerControllerProvider), 120);
 
-    providerContainer
-        .read(sleepTimerControllerProvider.notifier)
-        .setMinutes(60);
+    await tester.tap(button);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(find.byIcon(CupertinoIcons.hourglass), findsNothing);
+    expect(find.text('120'), findsNothing);
+    expect(providerContainer.read(sleepTimerControllerProvider), 0);
 
     await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);

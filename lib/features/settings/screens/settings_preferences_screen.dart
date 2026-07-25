@@ -11,6 +11,7 @@ import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
+import 'package:classipod/features/settings/models/netease_audio_format.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
@@ -22,6 +23,8 @@ import 'package:url_launcher/url_launcher.dart';
 enum _SettingsDisplayItems {
   musicSource,
   neteaseLogin,
+  neteaseAudioFormat,
+  neteaseBitrate,
   about,
   shuffle,
   repeat,
@@ -48,6 +51,10 @@ enum _SettingsDisplayItems {
         return '音乐源';
       case neteaseLogin:
         return '网易云登录';
+      case neteaseAudioFormat:
+        return '格式';
+      case neteaseBitrate:
+        return '码率';
       case about:
         return context.localization.aboutScreenTitle;
       case shuffle:
@@ -105,7 +112,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   String get routeName => Routes.settings.name;
 
   @override
-  List<_SettingsDisplayItems> get displayItems => _SettingsDisplayItems.values;
+  List<_SettingsDisplayItems> get displayItems {
+    final isNetease =
+        ref.read(settingsPreferencesControllerProvider).musicSource ==
+        MusicSource.netease;
+    return [
+      for (final item in _SettingsDisplayItems.values)
+        if (isNetease ||
+            (item != _SettingsDisplayItems.neteaseAudioFormat &&
+                item != _SettingsDisplayItems.neteaseBitrate))
+          item,
+    ];
+  }
 
   @override
   Future<void> onSelectPressed() =>
@@ -144,6 +162,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         break;
       case _SettingsDisplayItems.neteaseLogin:
         context.goNamed(Routes.neteaseLogin.name);
+        break;
+      case _SettingsDisplayItems.neteaseAudioFormat:
+        await ref
+            .read(settingsPreferencesControllerProvider.notifier)
+            .toggleNeteaseAudioFormat();
+        break;
+      case _SettingsDisplayItems.neteaseBitrate:
+        await ref
+            .read(settingsPreferencesControllerProvider.notifier)
+            .toggleNeteaseBitrate();
         break;
       case _SettingsDisplayItems.about:
         context.goNamed(Routes.about.name);
@@ -267,6 +295,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             : '本地音乐';
       case _SettingsDisplayItems.neteaseLogin:
         return ref.watch(neteaseSessionProvider).value?.nickname ?? '未登录';
+      case _SettingsDisplayItems.neteaseAudioFormat:
+        return settingsState.neteaseAudioFormat.title;
+      case _SettingsDisplayItems.neteaseBitrate:
+        return settingsState.neteaseAudioFormat == NeteaseAudioFormat.mp3
+            ? settingsState.neteaseMp3Bitrate.title
+            : settingsState.neteaseFlacQuality.title;
       case _SettingsDisplayItems.deviceColor:
         return settingsState.deviceColor.title(context);
       case _SettingsDisplayItems.clickWheelSize:
