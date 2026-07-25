@@ -72,7 +72,13 @@ jobs:
       - name: Verify package and fixed certificate
         run: |
           test -s Classipod-WYY.apk
-          keytool -printcert -jarfile Classipod-WYY.apk
+          BUILD_TOOLS=$(find "$ANDROID_SDK_ROOT/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BUILD_TOOLS/aapt2" dump badging Classipod-WYY.apk | grep "package: name='com.adeeteya.classipod'"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs Classipod-WYY.apk | tee /tmp/apksigner.txt
+          CERT=$(sed -n 's/Signer #1 certificate SHA-256 digest: //p' /tmp/apksigner.txt)
+          test "$CERT" = "0aafc0ba0891648561efcc32ea2215b84d144594f64f35b2d8e31b7eb803c0b1"
+          test "$(unzip -Z1 Classipod-WYY.apk | awk -F/ '/^lib\// {print $2}' | sort -u)" = "arm64-v8a"
+          ! unzip -Z1 Classipod-WYY.apk | grep -E 'DebugProbes|main_development|device_preview|symbols'
           sha256sum Classipod-WYY.apk
 
       - name: Publish direct APK
