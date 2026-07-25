@@ -77,7 +77,7 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
     try {
       final metadata = await ref
           .read(neteaseServiceProvider)
-          .playableTracks(_tracks);
+          .playableTracks(_tracks, preferredTrackId: _tracks[index].id);
       final targetId = int.parse(_tracks[index].id);
       final playableIndex = metadata.indexWhere(
         (item) => item.originalSongIndex == targetId,
@@ -89,10 +89,10 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
             ? NowPlayingType.album
             : NowPlayingType.playlist,
         musicMetadataList: metadata,
+        initialIndex: playableIndex,
       );
-      if (playableIndex > 0) await player.playSongAtIndex(playableIndex);
       await player.setShuffleMode(false);
-      await player.play();
+      unawaited(player.play());
       if (mounted) await context.pushNamed(Routes.nowPlaying.name);
     } catch (error) {
       if (mounted) setState(() => _error = '$error');

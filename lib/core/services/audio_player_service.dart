@@ -91,6 +91,7 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
   Future<void> setAudioSource({
     NowPlayingType nowPlayingType = NowPlayingType.songs,
     required List<MusicMetadata> musicMetadataList,
+    int initialIndex = 0,
   }) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
@@ -107,7 +108,7 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
           .read(audioPlayerProvider)
           .setAudioSources(
             songSourcePlaylist,
-            initialIndex: 0,
+            initialIndex: initialIndex,
             initialPosition: Duration.zero,
             shuffleOrder: DefaultShuffleOrder(),
           );
@@ -117,6 +118,7 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
           .setNewMetadataList(
             nowPlayingType: nowPlayingType,
             newMetadataList: musicMetadataList,
+            initialIndex: initialIndex,
           );
     });
   }

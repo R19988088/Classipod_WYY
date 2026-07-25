@@ -40,6 +40,10 @@ class NeteaseService {
 
   final HttpClient _http = HttpClient()..userAgent = _userAgent;
   final Map<String, String> _cookies = {};
+  final String _deviceId = List.generate(
+    16,
+    (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
+  ).join();
   bool _restored = false;
   NeteaseProfile? _profile;
 
@@ -137,23 +141,41 @@ class NeteaseService {
     };
   }
 
-  Future<List<MusicMetadata>> playableTracks(List<NeteaseTrack> tracks) async {
+  Future<List<MusicMetadata>> playableTracks(
+    List<NeteaseTrack> tracks, {
+    String? preferredTrackId,
+  }) async {
     if (tracks.isEmpty) return const [];
     final ids = tracks.map((track) => int.parse(track.id)).toList();
-    final root = await _postWeapi(
-      'https://music.163.com/weapi/song/enhance/player/url',
-      {'ids': jsonEncode(ids), 'br': '320000'},
-    );
-    _requireSuccess(root, '获取播放地址');
-    final data = root['data'];
-    if (data is! List) throw const FormatException('播放响应缺少 data');
     final urls = <String, String>{};
-    for (final item in data.whereType<Map>()) {
-      final id = item['id'];
-      final url = item['url'];
-      if (id != null && url is String && url.isNotEmpty) {
-        urls['$id'] = url.replaceFirst('http://', 'https://');
+    final Future<String?> preferredUrl = preferredTrackId == null
+        ? Future.value()
+        : playbackUrl(
+            preferredTrackId,
+          ).then<String?>((url) => url).catchError((_) => null);
+    for (var offset = 0; offset < ids.length; offset += 200) {
+      final page = ids.sublist(offset, min(offset + 200, ids.length));
+      final root = await _postWeapi(
+        'https://music.163.com/weapi/song/enhance/player/url',
+        {'ids': jsonEncode(page), 'br': '320000'},
+      );
+      _requireSuccess(root, '获取播放地址');
+      final data = root['data'];
+      if (data is! List) throw const FormatException('播放响应缺少 data');
+      for (final item in data.whereType<Map>()) {
+        final id = item['id'];
+        final url = item['url'];
+        if (id != null && url is String && url.isNotEmpty) {
+          urls['$id'] = url.replaceFirst('http://', 'https://');
+        }
       }
+    }
+    final resolvedPreferredUrl = await preferredUrl;
+    if (resolvedPreferredUrl != null && preferredTrackId != null) {
+      urls[preferredTrackId] = resolvedPreferredUrl;
+    } else if (preferredTrackId != null &&
+        !urls.containsKey(preferredTrackId)) {
+      throw StateError('该曲目当前账号无播放权限');
     }
     return [
       for (var index = 0; index < tracks.length; index++)
@@ -172,6 +194,24 @@ class NeteaseService {
             isOnDevice: false,
           ),
     ];
+  }
+
+  Future<String> playbackUrl(String trackId) async {
+    try {
+      return NeteaseParser.playbackUrl(
+        await _postEapi(
+          'https://interface.music.163.com/eapi/song/enhance/player/url/v1',
+          {'ids': '[$trackId]', 'level': 'lossless', 'encodeType': 'flac'},
+        ),
+      );
+    } catch (_) {
+      return NeteaseParser.playbackUrl(
+        await _postWeapi(
+          'https://music.163.com/weapi/song/enhance/player/url',
+          {'ids': '[$trackId]', 'br': '320000'},
+        ),
+      );
+    }
   }
 
   Future<List<NeteaseTrack>> _playlistTracks(String id) async {
@@ -258,14 +298,45 @@ class NeteaseService {
     return _post(target, NeteaseCrypto.weapi(payload));
   }
 
+  Future<Map<String, dynamic>> _postEapi(
+    String url,
+    Map<String, dynamic> payload,
+  ) {
+    final target = Uri.parse(url);
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final header = <String, String>{
+      'osver': _cookies['osver'] ?? 'Android 16',
+      'deviceId': _cookies['deviceId'] ?? _deviceId,
+      'os': _cookies['os'] ?? 'android',
+      'appver': _cookies['appver'] ?? '8.10.35',
+      'versioncode': _cookies['versioncode'] ?? '140',
+      'mobilename': _cookies['mobilename'] ?? '',
+      'buildver': _cookies['buildver'] ?? '${now ~/ 1000}',
+      'resolution': _cookies['resolution'] ?? '1920x1080',
+      '__csrf': _cookies['__csrf'] ?? '',
+      'channel': _cookies['channel'] ?? 'netease',
+      'requestId':
+          '${now}_${Random.secure().nextInt(10000).toString().padLeft(4, '0')}',
+      if (_cookies['MUSIC_U'] case final String value) 'MUSIC_U': value,
+      if (_cookies['MUSIC_A'] case final String value) 'MUSIC_A': value,
+    };
+    return _post(target, {
+      'params': NeteaseCrypto.eapi(target.path, {...payload, 'header': header}),
+    }, cookies: header);
+  }
+
   Future<Map<String, dynamic>> _postPlain(
     String url,
     Map<String, String> payload,
   ) => _post(Uri.parse(url), payload);
 
-  Future<Map<String, dynamic>> _post(Uri uri, Map<String, String> form) async {
+  Future<Map<String, dynamic>> _post(
+    Uri uri,
+    Map<String, String> form, {
+    Map<String, String>? cookies,
+  }) async {
     final request = await _http.postUrl(uri);
-    _headers(request);
+    _headers(request, cookies: cookies);
     request.headers.contentType = ContentType(
       'application',
       'x-www-form-urlencoded',
@@ -289,15 +360,16 @@ class NeteaseService {
     return _response(await request.close(), requireJson: false);
   }
 
-  void _headers(HttpClientRequest request) {
+  void _headers(HttpClientRequest request, {Map<String, String>? cookies}) {
     request.headers
       ..set(HttpHeaders.acceptHeader, '*/*')
       ..set(HttpHeaders.acceptLanguageHeader, 'zh-CN,zh-Hans;q=0.9')
       ..set(HttpHeaders.refererHeader, 'https://music.163.com/');
-    if (_cookies.isNotEmpty) {
+    final requestCookies = cookies ?? _cookies;
+    if (requestCookies.isNotEmpty) {
       request.headers.set(
         HttpHeaders.cookieHeader,
-        _cookies.entries
+        requestCookies.entries
             .map((entry) => '${entry.key}=${entry.value}')
             .join('; '),
       );

@@ -269,23 +269,34 @@ class MusicMetadata extends HiveObject {
         ),
       );
     } else {
-      return AudioSource.uri(
-        Uri.parse(filePath ?? ''),
-        tag: MediaItem(
-          id: filePath ?? '',
-          title: trackName ?? "Unknown Song",
-          album: albumName ?? "Unknown Album",
-          artist: getTrackArtistNames,
-          genre: genres.isEmpty ? null : genres[0],
-          duration: trackDuration != null
-              ? Duration(milliseconds: trackDuration!)
-              : null,
-          artUri: thumbnailPath == null
-              ? Uri.parse(Constants.defaultNotificationAlbumArtImageUrl)
-              : Uri.parse(thumbnailPath!),
-          rating: Rating.newStarRating(RatingStyle.range5stars, rating),
-        ),
+      final uri = Uri.parse(filePath ?? '');
+      final tag = MediaItem(
+        id: filePath ?? '',
+        title: trackName ?? "Unknown Song",
+        album: albumName ?? "Unknown Album",
+        artist: getTrackArtistNames,
+        genre: genres.isEmpty ? null : genres[0],
+        duration: trackDuration != null
+            ? Duration(milliseconds: trackDuration!)
+            : null,
+        artUri: thumbnailPath == null
+            ? Uri.parse(Constants.defaultNotificationAlbumArtImageUrl)
+            : Uri.parse(thumbnailPath!),
+        rating: Rating.newStarRating(RatingStyle.range5stars, rating),
       );
+      final headers = uri.host.endsWith('music.126.net')
+          ? const {
+              'Referer': 'https://music.163.com/',
+              'User-Agent':
+                  'Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 '
+                  'Chrome/138 Mobile Safari/537.36',
+            }
+          : null;
+      if (!kIsWeb && headers != null) {
+        // ignore: experimental_member_use
+        return LockCachingAudioSource(uri, headers: headers, tag: tag);
+      }
+      return AudioSource.uri(uri, headers: headers, tag: tag);
     }
   }
 

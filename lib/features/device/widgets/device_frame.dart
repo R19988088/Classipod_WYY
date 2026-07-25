@@ -2,6 +2,7 @@ import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/constants/keys.dart';
 import 'package:classipod/features/device/widgets/device_controls.dart';
 import 'package:classipod/features/device/widgets/device_screen.dart';
+import 'package:classipod/features/device/widgets/sleep_timer_button.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
 import 'package:flutter/cupertino.dart';
@@ -102,7 +103,16 @@ class DeviceFrame extends ConsumerWidget {
                 child: Column(
                   children: [
                     DeviceScreen(key: deviceScreenGlobalKey, child: child),
-                    const Spacer(flex: 2),
+                    const Expanded(
+                      flex: 2,
+                      child: Align(
+                        alignment: Alignment.topRight,
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 8, right: 4),
+                          child: SleepTimerButton(),
+                        ),
+                      ),
+                    ),
                     DeviceControls(key: deviceControlsGlobalKey),
                     const Spacer(),
                   ],

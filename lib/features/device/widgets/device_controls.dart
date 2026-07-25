@@ -186,7 +186,7 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
             ),
             clipBehavior: Clip.hardEdge,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
@@ -218,8 +218,7 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                     },
                     child: ColoredBox(
                       color: deviceColorStyle.controlBackgroundColor,
-                      child: Align(
-                        alignment: Alignment.topCenter,
+                      child: Center(
                         child: Text(
                           context.localization.menuButtonText,
                           key: menuButtonGlobalKey,
@@ -253,8 +252,7 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                           height: screenWidth * 0.2175,
                           child: ColoredBox(
                             color: deviceColorStyle.controlBackgroundColor,
-                            child: Align(
-                              alignment: Alignment.centerLeft,
+                            child: Center(
                               child: CustomPaint(
                                 size: const Size(20, 10),
                                 painter: PreviousButtonCustomPainter(
@@ -316,8 +314,7 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                           height: screenWidth * selectButtonRadiusRatio,
                           child: ColoredBox(
                             color: deviceColorStyle.controlBackgroundColor,
-                            child: Align(
-                              alignment: Alignment.centerRight,
+                            child: Center(
                               child: CustomPaint(
                                 size: const Size(20, 10),
                                 painter: NextButtonCustomPainter(
@@ -338,8 +335,7 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                         .playPauseButtonClick(),
                     child: ColoredBox(
                       color: deviceColorStyle.controlBackgroundColor,
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
+                      child: Center(
                         child: CustomPaint(
                           key: playPauseButtonGlobalKey,
                           size: const Size(26, 12),

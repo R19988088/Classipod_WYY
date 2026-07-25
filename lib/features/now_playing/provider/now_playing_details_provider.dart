@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/providers/filtered_audio_files_provider.dart';
@@ -17,34 +19,37 @@ final nowPlayingDetailsProvider =
 class NowPlayingDetailsNotifier extends Notifier<NowPlayingModel> {
   @override
   NowPlayingModel build() {
-    ref.read(audioPlayerProvider).currentIndexStream.listen((newIndex) {
-      if (newIndex != null &&
-          newIndex != state.currentIndex &&
-          state.metadataList.isNotEmpty) {
-        state = state.copyWith(
-          currentIndex: newIndex,
-          currentMetadata: state.metadataList[newIndex],
-        );
-      }
-    });
-
-    ref.read(audioPlayerProvider).playingStream.listen((isPlaying) {
-      if (isPlaying != state.isPlaying) {
-        state = state.copyWith(isPlaying: isPlaying);
-      }
-    });
-
-    ref.read(audioPlayerProvider).loopModeStream.listen((loopMode) {
-      if (loopMode != state.loopMode) {
-        state = state.copyWith(loopMode: loopMode);
-      }
-    });
-
-    ref.read(audioPlayerProvider).shuffleModeEnabledStream.listen((
-      isShuffleEnabled,
-    ) {
-      if (isShuffleEnabled != state.isShuffleEnabled) {
-        state = state.copyWith(isShuffleEnabled: isShuffleEnabled);
+    final player = ref.read(audioPlayerProvider);
+    final subscriptions = <StreamSubscription<dynamic>>[
+      player.currentIndexStream.listen((newIndex) {
+        if (newIndex != null &&
+            newIndex != state.currentIndex &&
+            state.metadataList.isNotEmpty) {
+          state = state.copyWith(
+            currentIndex: newIndex,
+            currentMetadata: state.metadataList[newIndex],
+          );
+        }
+      }),
+      player.playingStream.listen((isPlaying) {
+        if (isPlaying != state.isPlaying) {
+          state = state.copyWith(isPlaying: isPlaying);
+        }
+      }),
+      player.loopModeStream.listen((loopMode) {
+        if (loopMode != state.loopMode) {
+          state = state.copyWith(loopMode: loopMode);
+        }
+      }),
+      player.shuffleModeEnabledStream.listen((isShuffleEnabled) {
+        if (isShuffleEnabled != state.isShuffleEnabled) {
+          state = state.copyWith(isShuffleEnabled: isShuffleEnabled);
+        }
+      }),
+    ];
+    ref.onDispose(() {
+      for (final subscription in subscriptions) {
+        unawaited(subscription.cancel());
       }
     });
 
@@ -61,11 +66,17 @@ class NowPlayingDetailsNotifier extends Notifier<NowPlayingModel> {
   void setNewMetadataList({
     NowPlayingType? nowPlayingType,
     required List<MusicMetadata> newMetadataList,
+    int initialIndex = 0,
   }) {
+    final currentIndex = newMetadataList.isEmpty
+        ? 0
+        : initialIndex.clamp(0, newMetadataList.length - 1);
     state = state.copyWith(
-      currentIndex: 0,
+      currentIndex: currentIndex,
       nowPlayingType: nowPlayingType,
-      currentMetadata: newMetadataList.isNotEmpty ? newMetadataList[0] : null,
+      currentMetadata: newMetadataList.isNotEmpty
+          ? newMetadataList[currentIndex]
+          : null,
       metadataList: newMetadataList,
     );
   }

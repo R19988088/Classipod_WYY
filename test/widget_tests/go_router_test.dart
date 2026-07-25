@@ -12,8 +12,8 @@ import 'package:classipod/core/providers/shared_preferences_with_cache_provider.
 import 'package:classipod/features/app_startup/controllers/app_startup_controller.dart';
 import 'package:classipod/features/app_startup/screens/app_startup_screen.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -98,6 +98,42 @@ void main() {
       providerContainer.read(routerProvider).locationNamed,
       Routes.neteaseLibrary.name,
     );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    providerContainer.read(routerProvider).goNamed(Routes.splash.name);
+    await tester.pump(const Duration(seconds: 3));
+  });
+
+  testWidgets('Sleep timer button cycles through 60, 120, and off', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(300, 812));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providerContainer,
+        child: const AppStartupScreen(app: ClassipodApp()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final button = find.byKey(const ValueKey('sleep-timer'));
+    expect(button, findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+
+    await tester.tap(button);
+    await tester.pump();
+    expect(find.text('60'), findsOneWidget);
+    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+
+    await tester.tap(button);
+    await tester.pump();
+    expect(find.text('120'), findsOneWidget);
+
+    await tester.tap(button);
+    await tester.pump();
+    expect(find.text('60'), findsNothing);
+    expect(find.text('120'), findsNothing);
+    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);
