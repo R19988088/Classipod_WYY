@@ -253,10 +253,13 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                           child: ColoredBox(
                             color: deviceColorStyle.controlBackgroundColor,
                             child: Center(
-                              child: CustomPaint(
-                                size: const Size(20, 10),
-                                painter: PreviousButtonCustomPainter(
-                                  color: deviceColorStyle.buttonIconColor,
+                              child: Transform.translate(
+                                offset: const Offset(-4, 0),
+                                child: CustomPaint(
+                                  size: const Size(20, 10),
+                                  painter: PreviousButtonCustomPainter(
+                                    color: deviceColorStyle.buttonIconColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -315,10 +318,13 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                           child: ColoredBox(
                             color: deviceColorStyle.controlBackgroundColor,
                             child: Center(
-                              child: CustomPaint(
-                                size: const Size(20, 10),
-                                painter: NextButtonCustomPainter(
-                                  color: deviceColorStyle.buttonIconColor,
+                              child: Transform.translate(
+                                offset: const Offset(4, 0),
+                                child: CustomPaint(
+                                  size: const Size(20, 10),
+                                  painter: NextButtonCustomPainter(
+                                    color: deviceColorStyle.buttonIconColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -336,11 +342,14 @@ class _DeviceControlsState extends ConsumerState<DeviceControls> {
                     child: ColoredBox(
                       color: deviceColorStyle.controlBackgroundColor,
                       child: Center(
-                        child: CustomPaint(
-                          key: playPauseButtonGlobalKey,
-                          size: const Size(26, 12),
-                          painter: PlayPauseButtonCustomPainter(
-                            color: deviceColorStyle.buttonIconColor,
+                        child: Transform.translate(
+                          offset: const Offset(0, 4),
+                          child: CustomPaint(
+                            key: playPauseButtonGlobalKey,
+                            size: const Size(26, 12),
+                            painter: PlayPauseButtonCustomPainter(
+                              color: deviceColorStyle.buttonIconColor,
+                            ),
                           ),
                         ),
                       ),

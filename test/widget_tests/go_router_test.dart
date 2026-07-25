@@ -11,6 +11,7 @@ import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/providers/shared_preferences_with_cache_provider.dart';
 import 'package:classipod/features/app_startup/controllers/app_startup_controller.dart';
 import 'package:classipod/features/app_startup/screens/app_startup_screen.dart';
+import 'package:classipod/features/device/controllers/sleep_timer_controller.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:flutter/cupertino.dart';
@@ -151,7 +152,7 @@ void main() {
     await tester.pump(const Duration(seconds: 3));
   });
 
-  testWidgets('Sleep timer button cycles through 60, 120, and off', (
+  testWidgets('Sleep timer fades its duration choices in and out', (
     WidgetTester tester,
   ) async {
     await tester.binding.setSurfaceSize(const Size(300, 812));
@@ -164,23 +165,31 @@ void main() {
     await tester.pumpAndSettle();
 
     final button = find.byKey(const ValueKey('sleep-timer'));
+    final optionsOpacity = find.byKey(
+      const ValueKey('sleep-timer-options-opacity'),
+    );
     expect(button, findsOneWidget);
     expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 0);
 
     await tester.tap(button);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 1);
+    expect(find.byKey(const ValueKey('sleep-timer-60')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sleep-timer-120')), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('sleep-timer-60')));
     await tester.pump();
-    expect(find.text('60'), findsOneWidget);
+    expect(providerContainer.read(sleepTimerControllerProvider), 60);
+
+    await tester.tap(button);
+    await tester.pump(const Duration(milliseconds: 250));
+    expect(tester.widget<AnimatedOpacity>(optionsOpacity).opacity, 0);
     expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
 
-    await tester.tap(button);
-    await tester.pump();
-    expect(find.text('120'), findsOneWidget);
-
-    await tester.tap(button);
-    await tester.pump();
-    expect(find.text('60'), findsNothing);
-    expect(find.text('120'), findsNothing);
-    expect(find.byIcon(CupertinoIcons.hourglass), findsOneWidget);
+    providerContainer
+        .read(sleepTimerControllerProvider.notifier)
+        .setMinutes(60);
 
     await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);

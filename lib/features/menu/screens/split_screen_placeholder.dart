@@ -9,6 +9,7 @@ import 'package:classipod/features/menu/widgets/language_preview_widget.dart';
 import 'package:classipod/features/menu/widgets/now_playing_preview_widget.dart';
 import 'package:classipod/features/menu/widgets/settings_preview_widget.dart';
 import 'package:classipod/features/music/songs/provider/songs_provider.dart';
+import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:flutter/cupertino.dart';
@@ -93,11 +94,17 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
     if (currentSettings.splitScreenEnabled) {
       splitScreenType = ref.watch(splitScreenControllerProvider);
       if (splitScreenType == SplitScreenType.shuffle) {
+        final songCount = currentSettings.musicSource == MusicSource.netease
+            ? ref.watch(
+                nowPlayingDetailsProvider.select(
+                  (details) => details.metadataList.length,
+                ),
+              )
+            : ref.watch(songsProvider).length;
         splitScreenWidget = IconPreviewWidget(
           titleText: context.localization.shuffleSongsMenuTitle,
           icon: CupertinoIcons.shuffle,
-          contentText:
-              "${ref.read(songsProvider).length} ${context.localization.songsScreenTitle}",
+          contentText: "$songCount ${context.localization.songsScreenTitle}",
         );
       } else if (splitScreenType == SplitScreenType.netease ||
           (splitScreenType == SplitScreenType.albumArt &&

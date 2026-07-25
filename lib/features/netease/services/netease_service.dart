@@ -40,6 +40,9 @@ class NeteaseService {
 
   final HttpClient _http = HttpClient()..userAgent = _userAgent;
   final Map<String, String> _cookies = {};
+  final Map<NeteaseCollectionKind, Future<List<NeteaseCollection>>>
+  _libraryCache = {};
+  final Map<String, Future<List<NeteaseTrack>>> _tracksCache = {};
   final String _deviceId = List.generate(
     16,
     (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
@@ -71,6 +74,7 @@ class NeteaseService {
     );
     final status = NeteaseParser.qrStatus(root);
     if (status == NeteaseQrStatus.confirmed) {
+      _clearCaches();
       final account = await _postWeapi(
         'https://music.163.com/weapi/w/nuser/account/get',
         const {},
@@ -82,6 +86,7 @@ class NeteaseService {
   }
 
   Future<void> logout() async {
+    _clearCaches();
     _cookies.clear();
     _profile = null;
     final preferences = await SharedPreferences.getInstance();
@@ -92,6 +97,21 @@ class NeteaseService {
   }
 
   Future<List<NeteaseCollection>> library(NeteaseCollectionKind kind) async {
+    final cached = _libraryCache[kind];
+    if (cached != null) return cached;
+    final request = _loadLibrary(kind);
+    _libraryCache[kind] = request;
+    try {
+      return await request;
+    } catch (_) {
+      final _ = _libraryCache.remove(kind);
+      rethrow;
+    }
+  }
+
+  Future<List<NeteaseCollection>> _loadLibrary(
+    NeteaseCollectionKind kind,
+  ) async {
     final profile = await _requireProfile();
     return switch (kind) {
       NeteaseCollectionKind.album => NeteaseParser.albums(
@@ -120,6 +140,20 @@ class NeteaseService {
   }
 
   Future<List<NeteaseTrack>> tracks(NeteaseCollection collection) async {
+    final key = '${collection.kind.name}:${collection.id}';
+    final cached = _tracksCache[key];
+    if (cached != null) return cached;
+    final request = _loadTracks(collection);
+    _tracksCache[key] = request;
+    try {
+      return await request;
+    } catch (_) {
+      final _ = _tracksCache.remove(key);
+      rethrow;
+    }
+  }
+
+  Future<List<NeteaseTrack>> _loadTracks(NeteaseCollection collection) async {
     await _requireProfile();
     return switch (collection.kind) {
       NeteaseCollectionKind.album => NeteaseParser.albumTracks(
@@ -256,6 +290,11 @@ class NeteaseService {
       throw StateError('请先在设置中登录网易云音乐');
     }
     return _profile!;
+  }
+
+  void _clearCaches() {
+    _libraryCache.clear();
+    _tracksCache.clear();
   }
 
   Future<void> _restore() async {
