@@ -10,6 +10,7 @@ import 'package:classipod/features/menu/widgets/now_playing_preview_widget.dart'
 import 'package:classipod/features/menu/widgets/settings_preview_widget.dart';
 import 'package:classipod/features/music/songs/provider/songs_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -97,6 +98,14 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
           icon: CupertinoIcons.shuffle,
           contentText:
               "${ref.read(songsProvider).length} ${context.localization.songsScreenTitle}",
+        );
+      } else if (splitScreenType == SplitScreenType.netease ||
+          (splitScreenType == SplitScreenType.albumArt &&
+              currentSettings.musicSource == MusicSource.netease)) {
+        splitScreenWidget = const IconPreviewWidget(
+          titleText: '网易云音乐',
+          icon: CupertinoIcons.music_albums,
+          contentText: '专辑 · 歌单 · 播客',
         );
       } else if (splitScreenType == SplitScreenType.settings) {
         splitScreenWidget = const SettingsPreviewWidget();

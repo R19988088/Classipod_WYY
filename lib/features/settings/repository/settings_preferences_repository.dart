@@ -5,6 +5,7 @@ import 'package:classipod/features/settings/models/app_theme.dart';
 import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart';
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -40,7 +41,14 @@ class SettingsPreferencesRepository {
     return _sharedPreferencesWithCache.getString(
           SharedPreferencesKeys.clickWheelSize.name,
         ) ??
-        ClickWheelSize.medium.name;
+        ClickWheelSize.large.name;
+  }
+
+  String getMusicSource() {
+    return _sharedPreferencesWithCache.getString(
+          SharedPreferencesKeys.musicSource.name,
+        ) ??
+        MusicSource.netease.name;
   }
 
   String getClickWheelSensitivity() {
@@ -126,6 +134,13 @@ class SettingsPreferencesRepository {
     return _sharedPreferencesWithCache.setString(
       SharedPreferencesKeys.clickWheelSize.name,
       clickWheelSizeName,
+    );
+  }
+
+  Future<void> setMusicSource({required String musicSourceName}) async {
+    return _sharedPreferencesWithCache.setString(
+      SharedPreferencesKeys.musicSource.name,
+      musicSourceName,
     );
   }
 

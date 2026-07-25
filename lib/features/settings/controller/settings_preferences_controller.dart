@@ -12,6 +12,7 @@ import 'package:classipod/features/settings/models/app_theme.dart';
 import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart';
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
@@ -65,6 +66,9 @@ class SettingsPreferencesControllerNotifier
       splitScreenEnabled: settingsPreferencesRepository.getSplitScreenEnabled(),
       immersiveMode: settingsPreferencesRepository.getImmersiveMode(),
       appTheme: AppTheme.fromName(settingsPreferencesRepository.getAppTheme()),
+      musicSource: MusicSource.values.byName(
+        settingsPreferencesRepository.getMusicSource(),
+      ),
     );
   }
 
@@ -91,6 +95,17 @@ class SettingsPreferencesControllerNotifier
     } else {
       state = state.copyWith(fetchOnlineMusic: false);
     }
+  }
+
+  Future<void> toggleMusicSource() async {
+    final musicSource = state.musicSource == MusicSource.netease
+        ? MusicSource.local
+        : MusicSource.netease;
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setMusicSource(musicSourceName: musicSource.name);
+    state = state.copyWith(musicSource: musicSource);
+    ref.read(routerProvider).goNamed(Routes.splash.name);
   }
 
   Future<void> showAppTutorial() async {
@@ -323,6 +338,12 @@ class SettingsPreferencesControllerNotifier
     await ref
         .read(settingsPreferencesRepositoryProvider)
         .setDeviceColor(deviceColorName: DeviceColor.silver.name);
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setClickWheelSize(clickWheelSizeName: ClickWheelSize.large.name);
+    await ref
+        .read(settingsPreferencesRepositoryProvider)
+        .setMusicSource(musicSourceName: MusicSource.netease.name);
     await ref
         .read(settingsPreferencesRepositoryProvider)
         .setTouchScreenEnabled(isTouchScreenEnabled: true);

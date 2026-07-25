@@ -8,6 +8,7 @@ import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/repositories/metadata_reader_repository.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -33,73 +34,71 @@ class AudioFilesServiceNotifier
       if (ref.read(settingsPreferencesControllerProvider).fetchOnlineMusic) {
         return UnmodifiableListView(onlineDemoAudioFilesMetaData);
       }
+      if (ref.read(settingsPreferencesControllerProvider).musicSource !=
+          MusicSource.local) {
+        return UnmodifiableListView([]);
+      }
       // Fetch metadata from local files
-      else {
-        final Box<MusicMetadata> metadataBox = Hive.box<MusicMetadata>(
-          Constants.metadataBoxName,
-        );
-        // Check if the metadata box is empty
-        if (metadataBox.isEmpty) {
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-            final newDirectory = await FilePicker.getDirectoryPath(
-              dialogTitle: "Select Music Directory",
-              lockParentWindow: true,
-              initialDirectory: ref
-                  .read(deviceDirectoryProvider)
-                  .requireValue
-                  .musicFolderPath,
-            );
-            if (newDirectory != null) {
-              final result = await compute(
-                ref
-                    .read(metadataReaderRepositoryProvider)
-                    .extractMetadataFromDirectory,
-                newDirectory,
-              );
-              await metadataBox.addAll(result);
-              return UnmodifiableListView(result);
-            } else {
-              return UnmodifiableListView([]);
-            }
-          } else if (Platform.isIOS) {
-            final pickedFiles = await FilePicker.pickFiles(
-              allowMultiple: true,
-              dialogTitle: "Pick Song Files",
-            );
-
-            if (pickedFiles == null || pickedFiles.files.isEmpty) {
-              return UnmodifiableListView([]);
-            }
-
+      final Box<MusicMetadata> metadataBox = Hive.box<MusicMetadata>(
+        Constants.metadataBoxName,
+      );
+      // Check if the metadata box is empty
+      if (metadataBox.isEmpty) {
+        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+          final newDirectory = await FilePicker.getDirectoryPath(
+            dialogTitle: "Select Music Directory",
+            lockParentWindow: true,
+            initialDirectory: ref
+                .read(deviceDirectoryProvider)
+                .requireValue
+                .musicFolderPath,
+          );
+          if (newDirectory != null) {
             final result = await compute(
               ref
                   .read(metadataReaderRepositoryProvider)
-                  .extractMetadataFromFiles,
-              pickedFiles.files.map((f) => f.path!).toList(),
-            );
-
-            await metadataBox.addAll(result);
-            return UnmodifiableListView(result);
-          }
-          // On Android Automatically Fetch Music Files
-          else {
-            final OnAudioQuery audioQuery = OnAudioQuery();
-            final queriedSongs = await audioQuery.querySongs();
-
-            final result = await compute(
-              ref
-                  .read(metadataReaderRepositoryProvider)
-                  .extractMetadataFromFiles,
-              queriedSongs.map((e) => e.data).toList(growable: false),
+                  .extractMetadataFromDirectory,
+              newDirectory,
             );
             await metadataBox.addAll(result);
             return UnmodifiableListView(result);
+          } else {
+            return UnmodifiableListView([]);
           }
+        } else if (Platform.isIOS) {
+          final pickedFiles = await FilePicker.pickFiles(
+            allowMultiple: true,
+            dialogTitle: "Pick Song Files",
+          );
+
+          if (pickedFiles == null || pickedFiles.files.isEmpty) {
+            return UnmodifiableListView([]);
+          }
+
+          final result = await compute(
+            ref.read(metadataReaderRepositoryProvider).extractMetadataFromFiles,
+            pickedFiles.files.map((f) => f.path!).toList(),
+          );
+
+          await metadataBox.addAll(result);
+          return UnmodifiableListView(result);
         }
-        // Return cached metadata
+        // On Android Automatically Fetch Music Files
         else {
-          return UnmodifiableListView(metadataBox.values);
+          final OnAudioQuery audioQuery = OnAudioQuery();
+          final queriedSongs = await audioQuery.querySongs();
+
+          final result = await compute(
+            ref.read(metadataReaderRepositoryProvider).extractMetadataFromFiles,
+            queriedSongs.map((e) => e.data).toList(growable: false),
+          );
+          await metadataBox.addAll(result);
+          return UnmodifiableListView(result);
         }
+      }
+      // Return cached metadata
+      else {
+        return UnmodifiableListView(metadataBox.values);
       }
     } catch (e) {
       return UnmodifiableListView([]);

@@ -8,6 +8,8 @@ import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
 import 'package:classipod/features/menu/controller/split_screen_controller.dart';
 import 'package:classipod/features/menu/models/split_screen_type.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
+import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
 import 'package:flutter/cupertino.dart';
@@ -15,6 +17,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 enum _MainMenuDisplayItems {
+  music,
   albums,
   playlists,
   podcasts,
@@ -24,6 +27,8 @@ enum _MainMenuDisplayItems {
 
   String title(BuildContext context) {
     switch (this) {
+      case music:
+        return context.localization.musicMenuScreenTitle;
       case albums:
         return '专辑';
       case playlists:
@@ -55,7 +60,23 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   String get routeName => Routes.menu.name;
 
   @override
-  List<_MainMenuDisplayItems> get displayItems => _MainMenuDisplayItems.values;
+  List<_MainMenuDisplayItems> get displayItems =>
+      ref.read(settingsPreferencesControllerProvider).musicSource ==
+          MusicSource.local
+      ? const [
+          _MainMenuDisplayItems.music,
+          _MainMenuDisplayItems.settings,
+          _MainMenuDisplayItems.shuffleSongs,
+          _MainMenuDisplayItems.nowPlaying,
+        ]
+      : const [
+          _MainMenuDisplayItems.albums,
+          _MainMenuDisplayItems.playlists,
+          _MainMenuDisplayItems.podcasts,
+          _MainMenuDisplayItems.settings,
+          _MainMenuDisplayItems.shuffleSongs,
+          _MainMenuDisplayItems.nowPlaying,
+        ];
 
   @override
   void onMenuButtonPressed() {
@@ -64,11 +85,14 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   @override
   Future<void> onSelectPressed() =>
-      _navigateToScreen(_MainMenuDisplayItems.values[selectedDisplayItem]);
+      _navigateToScreen(displayItems[selectedDisplayItem]);
 
   Future<void> _navigateToScreen(_MainMenuDisplayItems menuItem) async {
     setState(() => selectedDisplayItem = displayItems.indexOf(menuItem));
     switch (menuItem) {
+      case _MainMenuDisplayItems.music:
+        context.goNamed(Routes.musicMenu.name);
+        break;
       case _MainMenuDisplayItems.albums:
         _openLibrary(NeteaseCollectionKind.album);
         break;
@@ -106,12 +130,17 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   Future<void> _changeSplitScreenType() async {
     await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
     switch (displayItems[selectedDisplayItem]) {
+      case _MainMenuDisplayItems.music:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.albumArt;
+        break;
       case _MainMenuDisplayItems.albums:
       case _MainMenuDisplayItems.playlists:
       case _MainMenuDisplayItems.podcasts:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
-            SplitScreenType.albumArt;
+            SplitScreenType.netease;
         break;
       case _MainMenuDisplayItems.settings:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
@@ -146,6 +175,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(
+      settingsPreferencesControllerProvider.select(
+        (settings) => settings.musicSource,
+      ),
+    );
     unawaited(_changeSplitScreenType());
     if (!ref.read(splitScreenViewControllerProvider).isScreenVisible) {
       unawaited(ref.read(splitScreenViewControllerProvider).openSplitView());

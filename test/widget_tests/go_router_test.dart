@@ -13,6 +13,7 @@ import 'package:classipod/features/app_startup/controllers/app_startup_controlle
 import 'package:classipod/features/app_startup/screens/app_startup_screen.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -74,6 +75,33 @@ void main() {
           ),
       '/menu/neteaseLibrary/album',
     );
+  });
+
+  testWidgets('Parameterized route reports its configured route name', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(300, 812));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providerContainer,
+        child: const AppStartupScreen(app: ClassipodApp()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    providerContainer
+        .read(routerProvider)
+        .goNamed(Routes.neteaseLibrary.name, pathParameters: {'kind': 'album'});
+    await tester.pumpAndSettle();
+
+    expect(
+      providerContainer.read(routerProvider).locationNamed,
+      Routes.neteaseLibrary.name,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    providerContainer.read(routerProvider).goNamed(Routes.splash.name);
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets('Show Page Not Found on Error Screen', (

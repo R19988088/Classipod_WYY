@@ -9,6 +9,7 @@ import 'package:classipod/features/music/genres/providers/genres_provider.dart';
 import 'package:classipod/features/music/playlist/providers/playlists_provider.dart';
 import 'package:classipod/features/music/songs/provider/songs_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,10 +23,20 @@ final splashControllerProvider =
 class SplashControllerNotifier extends AsyncNotifier<void> {
   @override
   Future<void> build() async {
-    await requestStoragePermissions();
+    if (ref.read(settingsPreferencesControllerProvider).musicSource ==
+        MusicSource.local) {
+      await requestStoragePermissions();
+    } else {
+      await initializeNetease();
+    }
   }
 
   Future<void> requestStoragePermissions() async {
+    if (ref.read(settingsPreferencesControllerProvider).musicSource !=
+        MusicSource.local) {
+      await initializeNetease();
+      return;
+    }
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
@@ -45,6 +56,14 @@ class SplashControllerNotifier extends AsyncNotifier<void> {
 
       await initializeApp();
     });
+  }
+
+  Future<void> initializeNetease() async {
+    await ref
+        .read(settingsPreferencesControllerProvider.notifier)
+        .setInitialRepeatMode();
+    ref.invalidate(tutorialControllerProvider);
+    ref.read(routerProvider).goNamed(Routes.menu.name);
   }
 
   Future<void> initializeApp() async {

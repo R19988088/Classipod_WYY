@@ -11,6 +11,7 @@ extension GoRouterExtension on GoRouter {
   }
 
   String get locationNamed {
-    return location.split("/").last.split("?").first;
+    return routerDelegate.currentConfiguration.last.route.name ??
+        location.split("/").last.split("?").first;
   }
 }

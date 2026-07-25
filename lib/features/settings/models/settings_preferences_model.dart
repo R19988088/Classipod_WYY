@@ -2,6 +2,7 @@ import 'package:classipod/features/settings/models/app_theme.dart';
 import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart';
 import 'package:classipod/features/settings/models/click_wheel_size.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/repeat_mode.dart';
 import 'package:classipod/features/settings/models/volume_mode.dart';
 
@@ -19,6 +20,7 @@ class SettingsPreferencesModel {
   final bool immersiveMode;
   final bool fetchOnlineMusic;
   final AppTheme appTheme;
+  final MusicSource musicSource;
 
   SettingsPreferencesModel({
     required this.languageLocaleCode,
@@ -33,6 +35,7 @@ class SettingsPreferencesModel {
     required this.splitScreenEnabled,
     required this.immersiveMode,
     required this.appTheme,
+    required this.musicSource,
     this.fetchOnlineMusic = false,
   });
 
@@ -50,6 +53,7 @@ class SettingsPreferencesModel {
     bool? immersiveMode,
     bool? fetchOnlineMusic,
     AppTheme? appTheme,
+    MusicSource? musicSource,
   }) {
     return SettingsPreferencesModel(
       languageLocaleCode: languageLocaleCode ?? this.languageLocaleCode,
@@ -66,6 +70,7 @@ class SettingsPreferencesModel {
       immersiveMode: immersiveMode ?? this.immersiveMode,
       appTheme: appTheme ?? this.appTheme,
       fetchOnlineMusic: fetchOnlineMusic ?? this.fetchOnlineMusic,
+      musicSource: musicSource ?? this.musicSource,
     );
   }
 
@@ -84,6 +89,7 @@ class SettingsPreferencesModel {
         other.splitScreenEnabled == splitScreenEnabled &&
         other.immersiveMode == immersiveMode &&
         other.fetchOnlineMusic == fetchOnlineMusic &&
+        other.musicSource == musicSource &&
         other.appTheme == appTheme;
   }
 
@@ -102,5 +108,6 @@ class SettingsPreferencesModel {
     immersiveMode,
     appTheme,
     fetchOnlineMusic,
+    musicSource,
   );
 }

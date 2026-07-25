@@ -10,6 +10,7 @@ import 'package:classipod/features/menu/models/split_screen_type.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
@@ -19,6 +20,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _SettingsDisplayItems {
+  musicSource,
   neteaseLogin,
   about,
   shuffle,
@@ -42,6 +44,8 @@ enum _SettingsDisplayItems {
 
   String title(BuildContext context) {
     switch (this) {
+      case musicSource:
+        return '音乐源';
       case neteaseLogin:
         return '网易云登录';
       case about:
@@ -108,6 +112,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Future<void> _settingAction(_SettingsDisplayItems settingItem) async {
     setState(() => selectedDisplayItem = displayItems.indexOf(settingItem));
     switch (settingItem) {
+      case _SettingsDisplayItems.musicSource:
+        await ref
+            .read(settingsPreferencesControllerProvider.notifier)
+            .toggleMusicSource();
+        break;
       case _SettingsDisplayItems.neteaseLogin:
         context.goNamed(Routes.neteaseLogin.name);
         break;
@@ -227,6 +236,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _SettingsDisplayItems settingsItem,
   ) {
     switch (settingsItem) {
+      case _SettingsDisplayItems.musicSource:
+        return settingsState.musicSource == MusicSource.netease
+            ? '网易云音乐'
+            : '本地音乐';
       case _SettingsDisplayItems.neteaseLogin:
         return ref.watch(neteaseSessionProvider).value?.nickname ?? '未登录';
       case _SettingsDisplayItems.deviceColor:
@@ -256,6 +269,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
   Future<void> _changeSplitScreenType() async {
     await Future.delayed(const Duration(milliseconds: 150));
+    if (!mounted) return;
     switch (displayItems[selectedDisplayItem]) {
       case _SettingsDisplayItems.language:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
