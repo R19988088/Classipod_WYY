@@ -7,6 +7,7 @@ import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
 import 'package:classipod/features/menu/controller/split_screen_controller.dart';
 import 'package:classipod/features/menu/models/split_screen_type.dart';
+import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
@@ -18,6 +19,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 enum _SettingsDisplayItems {
+  neteaseLogin,
   about,
   shuffle,
   repeat,
@@ -40,6 +42,8 @@ enum _SettingsDisplayItems {
 
   String title(BuildContext context) {
     switch (this) {
+      case neteaseLogin:
+        return '网易云登录';
       case about:
         return context.localization.aboutScreenTitle;
       case shuffle:
@@ -104,6 +108,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   Future<void> _settingAction(_SettingsDisplayItems settingItem) async {
     setState(() => selectedDisplayItem = displayItems.indexOf(settingItem));
     switch (settingItem) {
+      case _SettingsDisplayItems.neteaseLogin:
+        context.goNamed(Routes.neteaseLogin.name);
+        break;
       case _SettingsDisplayItems.about:
         context.goNamed(Routes.about.name);
         break;
@@ -220,6 +227,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     _SettingsDisplayItems settingsItem,
   ) {
     switch (settingsItem) {
+      case _SettingsDisplayItems.neteaseLogin:
+        return ref.watch(neteaseSessionProvider).value?.nickname ?? '未登录';
       case _SettingsDisplayItems.deviceColor:
         return settingsState.deviceColor.title(context);
       case _SettingsDisplayItems.clickWheelSize:

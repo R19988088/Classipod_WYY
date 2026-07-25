@@ -32,11 +32,14 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        ndk.abiFilters.addAll(arrayOf("armeabi-v7a", "arm64-v8a", "x86_64"))
     }
 
     buildFeatures {
         resValues = true
+    }
+
+    packaging {
+        resources.excludes += "DebugProbesKt.bin"
     }
 
     signingConfigs {
@@ -57,6 +60,11 @@ android {
         }
         getByName("release") {
             signingConfig = signingConfigs.getByName("release")
+            isDebuggable = false
+            isJniDebuggable = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
     }
 

@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:audio_service/audio_service.dart';
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:just_audio/just_audio.dart';
 
 void main() {
   const String expectedValue = 'Le curé de Ambon';
@@ -34,4 +36,15 @@ void main() {
       expect(metadata.trackArtistNames, [expectedValue]);
     },
   );
+
+  test('remote metadata keeps its network artwork URI', () {
+    final source = MusicMetadata(
+      filePath: 'https://audio.example/song.mp3',
+      thumbnailPath: 'https://image.example/cover.jpg',
+      isOnDevice: false,
+    ).toAudioSource();
+    final item = (source as UriAudioSource).tag as MediaItem;
+
+    expect(item.artUri, Uri.parse('https://image.example/cover.jpg'));
+  });
 }

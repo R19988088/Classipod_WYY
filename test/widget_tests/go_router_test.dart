@@ -64,6 +64,18 @@ void main() {
     expect('splash', providerContainer.read(routerProvider).locationNamed);
   });
 
+  test('Netease library route keeps the category in one route level', () {
+    expect(
+      providerContainer
+          .read(routerProvider)
+          .namedLocation(
+            Routes.neteaseLibrary.name,
+            pathParameters: {'kind': 'album'},
+          ),
+      '/menu/neteaseLibrary/album',
+    );
+  });
+
   testWidgets('Show Page Not Found on Error Screen', (
     WidgetTester tester,
   ) async {

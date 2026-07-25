@@ -282,7 +282,7 @@ class MusicMetadata extends HiveObject {
               : null,
           artUri: thumbnailPath == null
               ? Uri.parse(Constants.defaultNotificationAlbumArtImageUrl)
-              : Uri.file(thumbnailPath!),
+              : Uri.parse(thumbnailPath!),
           rating: Rating.newStarRating(RatingStyle.range5stars, rating),
         ),
       );

@@ -27,6 +27,10 @@ import 'package:classipod/features/music/search/screens/search_more_options_moda
 import 'package:classipod/features/music/search/screens/search_screen.dart';
 import 'package:classipod/features/music/songs/screens/songs_more_options_modal.dart';
 import 'package:classipod/features/music/songs/screens/songs_screen.dart';
+import 'package:classipod/features/netease/models/netease_models.dart';
+import 'package:classipod/features/netease/screens/netease_library_screen.dart';
+import 'package:classipod/features/netease/screens/netease_login_screen.dart';
+import 'package:classipod/features/netease/screens/netease_tracks_screen.dart';
 import 'package:classipod/features/now_playing/screen/now_playing_more_options_modal.dart';
 import 'package:classipod/features/now_playing/screen/now_playing_screen.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
@@ -43,6 +47,7 @@ enum Routes {
   splash,
   menu,
   settings,
+  neteaseLogin,
   about,
   language,
   deviceColor,
@@ -50,6 +55,8 @@ enum Routes {
   nowPlaying,
   nowPlayingMoreOptions,
   musicMenu,
+  neteaseLibrary,
+  neteaseTracks,
   coverFlow,
   coverFlowSelection,
   artists,
@@ -84,6 +91,8 @@ enum Routes {
         return context.localization.menuScreenTitle;
       case settings:
         return context.localization.settingsScreenTitle;
+      case neteaseLogin:
+        return '网易云登录';
       case about:
         return context.localization.aboutScreenTitle;
       case language:
@@ -98,6 +107,9 @@ enum Routes {
         return context.localization.nowPlayingScreenTitle;
       case musicMenu:
         return context.localization.musicMenuScreenTitle;
+      case neteaseLibrary:
+      case neteaseTracks:
+        return '网易云音乐';
       case coverFlow:
         return context.localization.coverFlowScreenTitle;
       case coverFlowSelection:
@@ -206,6 +218,13 @@ final routerProvider = Provider(
                         const CupertinoPage(child: SettingsScreen()),
                     routes: [
                       GoRoute(
+                        path: Routes.neteaseLogin.name,
+                        name: Routes.neteaseLogin.name,
+                        parentNavigatorKey: rootNavigatorKey,
+                        pageBuilder: (context, state) =>
+                            const CupertinoPage(child: NeteaseLoginScreen()),
+                      ),
+                      GoRoute(
                         path: Routes.about.name,
                         name: Routes.about.name,
                         parentNavigatorKey: rootNavigatorKey,
@@ -242,6 +261,30 @@ final routerProvider = Provider(
                         },
                         pageBuilder: (context, state) => const CupertinoPage(
                           child: ExcludeDirectoriesScreen(),
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: '${Routes.neteaseLibrary}/:kind',
+                    name: Routes.neteaseLibrary.name,
+                    parentNavigatorKey: rootNavigatorKey,
+                    pageBuilder: (context, state) => CupertinoPage(
+                      child: NeteaseLibraryScreen(
+                        kind: NeteaseCollectionKind.values.byName(
+                          state.pathParameters['kind']!,
+                        ),
+                      ),
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: Routes.neteaseTracks.name,
+                        name: Routes.neteaseTracks.name,
+                        parentNavigatorKey: rootNavigatorKey,
+                        pageBuilder: (context, state) => CupertinoPage(
+                          child: NeteaseTracksScreen(
+                            collection: state.extra as NeteaseCollection,
+                          ),
                         ),
                       ),
                     ],

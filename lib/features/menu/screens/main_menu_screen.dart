@@ -7,6 +7,7 @@ import 'package:classipod/core/widgets/display_list_tile.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
 import 'package:classipod/features/menu/controller/split_screen_controller.dart';
 import 'package:classipod/features/menu/models/split_screen_type.dart';
+import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,15 +15,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 enum _MainMenuDisplayItems {
-  music,
+  albums,
+  playlists,
+  podcasts,
   settings,
   shuffleSongs,
   nowPlaying;
 
   String title(BuildContext context) {
     switch (this) {
-      case music:
-        return context.localization.musicMenuScreenTitle;
+      case albums:
+        return '专辑';
+      case playlists:
+        return '歌单';
+      case podcasts:
+        return '播客';
       case settings:
         return context.localization.settingsScreenTitle;
       case shuffleSongs:
@@ -62,8 +69,14 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   Future<void> _navigateToScreen(_MainMenuDisplayItems menuItem) async {
     setState(() => selectedDisplayItem = displayItems.indexOf(menuItem));
     switch (menuItem) {
-      case _MainMenuDisplayItems.music:
-        context.goNamed(Routes.musicMenu.name);
+      case _MainMenuDisplayItems.albums:
+        _openLibrary(NeteaseCollectionKind.album);
+        break;
+      case _MainMenuDisplayItems.playlists:
+        _openLibrary(NeteaseCollectionKind.playlist);
+        break;
+      case _MainMenuDisplayItems.podcasts:
+        _openLibrary(NeteaseCollectionKind.podcast);
         break;
       case _MainMenuDisplayItems.nowPlaying:
         await _navigateToNowPlayingScreen();
@@ -78,6 +91,13 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     }
   }
 
+  void _openLibrary(NeteaseCollectionKind kind) {
+    context.goNamed(
+      Routes.neteaseLibrary.name,
+      pathParameters: {'kind': kind.name},
+    );
+  }
+
   Future<void> _navigateToNowPlayingScreen() async {
     unawaited(ref.read(splitScreenViewControllerProvider).closeSplitView());
     await context.pushNamed(Routes.nowPlaying.name, extra: Routes.menu.name);
@@ -87,7 +107,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   Future<void> _changeSplitScreenType() async {
     await Future.delayed(const Duration(milliseconds: 150));
     switch (displayItems[selectedDisplayItem]) {
-      case _MainMenuDisplayItems.music:
+      case _MainMenuDisplayItems.albums:
+      case _MainMenuDisplayItems.playlists:
+      case _MainMenuDisplayItems.podcasts:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
             SplitScreenType.albumArt;
         break;
