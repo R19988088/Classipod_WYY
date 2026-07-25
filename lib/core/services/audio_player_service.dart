@@ -7,6 +7,7 @@ import 'package:classipod/features/music/playlist/models/playlist_model.dart';
 import 'package:classipod/features/now_playing/models/now_playing_model.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
@@ -62,9 +63,14 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
   Future<void> shuffleAllSongs() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      //If Album or Playlist is being played then Switch to original List of Songs
-      if (ref.read(nowPlayingDetailsProvider).nowPlayingType !=
-          NowPlayingType.songs) {
+      final settings = ref.read(settingsPreferencesControllerProvider);
+      final nowPlaying = ref.read(nowPlayingDetailsProvider);
+      if (nowPlaying.metadataList.isEmpty) return;
+
+      // Online queues must keep their resolved URLs; only local playback has
+      // an original all-songs list to restore here.
+      if (settings.musicSource == MusicSource.local &&
+          nowPlaying.nowPlayingType != NowPlayingType.songs) {
         await setAudioSource(
           musicMetadataList: ref.read(filteredAudioFilesProvider).requireValue,
         );

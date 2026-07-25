@@ -105,7 +105,6 @@ class SettingsPreferencesControllerNotifier
         .read(settingsPreferencesRepositoryProvider)
         .setMusicSource(musicSourceName: musicSource.name);
     state = state.copyWith(musicSource: musicSource);
-    ref.read(routerProvider).goNamed(Routes.splash.name);
   }
 
   Future<void> showAppTutorial() async {

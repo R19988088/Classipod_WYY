@@ -12,6 +12,7 @@ import 'package:classipod/core/providers/shared_preferences_with_cache_provider.
 import 'package:classipod/features/app_startup/controllers/app_startup_controller.dart';
 import 'package:classipod/features/app_startup/screens/app_startup_screen.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,6 +76,52 @@ void main() {
           ),
       '/menu/neteaseLibrary/album',
     );
+  });
+
+  testWidgets('music source applies only after leaving settings', (
+    WidgetTester tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(300, 812));
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: providerContainer,
+        child: const AppStartupScreen(app: ClassipodApp()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    providerContainer.read(routerProvider).goNamed(Routes.menu.name);
+    await tester.pump(const Duration(milliseconds: 100));
+    providerContainer.read(routerProvider).goNamed(Routes.settings.name);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(
+      providerContainer.read(routerProvider).locationNamed,
+      Routes.settings.name,
+    );
+
+    tester
+        .widget<SettingsListTile>(find.byType(SettingsListTile).first)
+        .onTap();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      providerContainer.read(routerProvider).locationNamed,
+      Routes.settings.name,
+    );
+
+    providerContainer.read(routerProvider).pop();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      providerContainer.read(routerProvider).locationNamed,
+      Routes.splash.name,
+    );
+
+    await providerContainer
+        .read(settingsPreferencesControllerProvider.notifier)
+        .toggleMusicSource();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets('Parameterized route reports its configured route name', (

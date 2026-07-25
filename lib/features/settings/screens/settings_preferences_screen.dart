@@ -99,6 +99,8 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen>
     with CustomScreen {
+  late final MusicSource _initialMusicSource;
+
   @override
   String get routeName => Routes.settings.name;
 
@@ -108,6 +110,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
   @override
   Future<void> onSelectPressed() =>
       _settingAction(displayItems[selectedDisplayItem]);
+
+  bool get _musicSourceChanged =>
+      ref.read(settingsPreferencesControllerProvider).musicSource !=
+      _initialMusicSource;
+
+  @override
+  void onMenuButtonPressed() {
+    if (_musicSourceChanged) {
+      ref.read(routerProvider).goNamed(Routes.splash.name);
+    } else {
+      context.pop();
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _initialMusicSource = ref.read(
+      settingsPreferencesControllerProvider.select(
+        (settings) => settings.musicSource,
+      ),
+    );
+  }
 
   Future<void> _settingAction(_SettingsDisplayItems settingItem) async {
     setState(() => selectedDisplayItem = displayItems.indexOf(settingItem));
@@ -357,31 +382,38 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
 
     unawaited(_changeSplitScreenType());
 
-    return CupertinoPageScaffold(
-      child: Column(
-        children: [
-          StatusBar(title: Routes.settings.title(context)),
-          Flexible(
-            child: CupertinoScrollbar(
-              controller: scrollController,
-              child: ListView.builder(
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop && _musicSourceChanged) {
+          ref.read(routerProvider).goNamed(Routes.splash.name);
+        }
+      },
+      child: CupertinoPageScaffold(
+        child: Column(
+          children: [
+            StatusBar(title: Routes.settings.title(context)),
+            Flexible(
+              child: CupertinoScrollbar(
                 controller: scrollController,
-                itemCount: displayItems.length,
-                prototypeItem: SettingsListTile(
-                  text: '',
-                  isSelected: false,
-                  onTap: () {},
-                ),
-                itemBuilder: (context, index) => SettingsListTile(
-                  text: displayItems[index].title(context),
-                  value: _getValue(settingsState, displayItems[index]),
-                  isSelected: selectedDisplayItem == index,
-                  onTap: () async => _settingAction(displayItems[index]),
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: displayItems.length,
+                  prototypeItem: SettingsListTile(
+                    text: '',
+                    isSelected: false,
+                    onTap: () {},
+                  ),
+                  itemBuilder: (context, index) => SettingsListTile(
+                    text: displayItems[index].title(context),
+                    value: _getValue(settingsState, displayItems[index]),
+                    isSelected: selectedDisplayItem == index,
+                    onTap: () async => _settingAction(displayItems[index]),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -109,7 +109,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
         context.goNamed(Routes.settings.name);
         break;
       case _MainMenuDisplayItems.shuffleSongs:
-        await ref.read(audioPlayerServiceProvider.notifier).shuffleAllSongs();
+        unawaited(
+          ref.read(audioPlayerServiceProvider.notifier).shuffleAllSongs(),
+        );
         await _navigateToNowPlayingScreen();
         break;
     }
