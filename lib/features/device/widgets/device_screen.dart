@@ -33,7 +33,7 @@ class DeviceScreen extends ConsumerWidget {
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(7),
           child: MediaQuery(
             data: MediaQuery.of(context).copyWith(
               size: Size(size.width - 40 - 10, Constants.screenHeight),
