@@ -128,6 +128,25 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
     }
   }
 
+  Future<void> setCustomAudioSource({
+    required AudioSource audioSource,
+    required MusicMetadata metadata,
+  }) async {
+    state = const AsyncLoading();
+    final nextState = await AsyncValue.guard(() async {
+      ref
+          .read(nowPlayingDetailsProvider.notifier)
+          .setNewMetadataList(newMetadataList: [metadata]);
+      await ref
+          .read(audioPlayerProvider)
+          .setAudioSource(audioSource, initialPosition: Duration.zero);
+    });
+    state = nextState;
+    if (nextState.hasError) {
+      Error.throwWithStackTrace(nextState.error!, nextState.stackTrace!);
+    }
+  }
+
   Future<void> nextSong() async {
     await ref.read(audioPlayerProvider).seekToNext();
   }
