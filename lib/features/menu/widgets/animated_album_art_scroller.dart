@@ -2,11 +2,16 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/services/media_cache.dart';
 import 'package:classipod/core/widgets/empty_state_widget.dart';
 import 'package:classipod/features/menu/models/split_screen_type.dart';
 import 'package:classipod/features/music/album/providers/album_details_provider.dart';
+import 'package:classipod/features/music/cover_flow/controllers/cover_flow_favorites_controller.dart';
+import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
+import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +35,27 @@ class _AnimatedAlbumArtScrollerState
 
   void _getRandomAlbumArt() {
     final albumDetails = ref.read(albumDetailsProvider);
+    final settings = ref.read(settingsPreferencesControllerProvider);
+    if (settings.musicSource == MusicSource.netease) {
+      final covers = ref
+          .read(currentCoverFlowAlbumsProvider)
+          .where((album) => album.coverUri?.isNotEmpty == true)
+          .toList();
+      if (covers.isNotEmpty) {
+        final cover = covers
+            .elementAt(Random().nextInt(covers.length))
+            .coverUri!;
+        setState(() {
+          _isEmptyState = false;
+          _albumArtImage = CachedNetworkImageProvider(
+            cover,
+            headers: neteaseImageHeaders,
+            cacheManager: PersistentCoverCache.instance,
+          );
+        });
+        return;
+      }
+    }
     if (albumDetails.isEmpty) {
       setState(() {
         _isEmptyState = true;

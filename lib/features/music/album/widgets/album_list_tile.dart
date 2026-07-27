@@ -11,6 +11,8 @@ class AlbumListTile extends StatelessWidget {
   final bool isSelected;
   final bool showArtistName;
   final bool isAllSongsAlbum;
+  final bool isCoverFlowFavorite;
+  final String? heroTag;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
 
@@ -19,6 +21,8 @@ class AlbumListTile extends StatelessWidget {
     required this.albumDetails,
     required this.isSelected,
     this.isAllSongsAlbum = false,
+    this.isCoverFlowFavorite = false,
+    this.heroTag,
     this.showArtistName = true,
     required this.onTap,
     required this.onLongPress,
@@ -73,18 +77,23 @@ class AlbumListTile extends StatelessWidget {
                   ),
                 ),
               if (!isAllSongsAlbum)
-                Image(
-                  image: (albumDetails.albumArtPath != null)
-                      ? albumDetails.isOnDevice()
-                            ? FileImage(File(albumDetails.albumArtPath!))
-                            : NetworkImage(albumDetails.albumArtPath!)
-                      : const AssetImage(Assets.defaultAlbumCoverImage),
-                  errorBuilder: (_, _, _) => Image.asset(
-                    Assets.defaultAlbumCoverImage,
-                    fit: BoxFit.fitWidth,
+                Hero(
+                  tag:
+                      heroTag ??
+                      '${albumDetails.albumName}-${albumDetails.albumArtistName}',
+                  child: Image(
+                    image: (albumDetails.albumArtPath != null)
+                        ? albumDetails.isOnDevice()
+                              ? FileImage(File(albumDetails.albumArtPath!))
+                              : NetworkImage(albumDetails.albumArtPath!)
+                        : const AssetImage(Assets.defaultAlbumCoverImage),
+                    errorBuilder: (_, _, _) => Image.asset(
+                      Assets.defaultAlbumCoverImage,
+                      fit: BoxFit.fitWidth,
+                    ),
+                    height: 54,
+                    width: 54,
                   ),
-                  height: 54,
-                  width: 54,
                 ),
               const SizedBox(width: 10),
               Expanded(
@@ -122,6 +131,14 @@ class AlbumListTile extends StatelessWidget {
                   ],
                 ),
               ),
+              if (isCoverFlowFavorite)
+                Icon(
+                  CupertinoIcons.star_fill,
+                  size: 16,
+                  color: isSelected
+                      ? context.appInverseTextColor
+                      : AppPalette.selectedTileGradientColor2,
+                ),
               if (isSelected)
                 Icon(
                   CupertinoIcons.right_chevron,

@@ -8,6 +8,8 @@ class MarqueeText extends StatefulWidget {
     this.text, {
     super.key,
     this.style,
+    this.strutStyle,
+    this.textHeightBehavior,
     this.textAlign = TextAlign.left,
     this.textDirection = TextDirection.ltr,
     this.numberOfReps,
@@ -30,6 +32,10 @@ class MarqueeText extends StatefulWidget {
   final TextDirection textDirection;
 
   final TextStyle? style;
+
+  final StrutStyle? strutStyle;
+
+  final TextHeightBehavior? textHeightBehavior;
 
   final int? numberOfReps;
 
@@ -121,6 +127,8 @@ class _MarqueeTextState extends State<MarqueeText> {
             child: Text(
               _endlessText ?? widget.text,
               style: widget.style,
+              strutStyle: widget.strutStyle,
+              textHeightBehavior: widget.textHeightBehavior,
               textAlign: widget.textAlign,
             ),
           ),

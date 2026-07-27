@@ -15,6 +15,7 @@ import 'package:classipod/features/music/album/screens/album_selection_screen.da
 import 'package:classipod/features/music/album/screens/album_songs_screen.dart';
 import 'package:classipod/features/music/artists/screens/artist_albums_screen.dart';
 import 'package:classipod/features/music/artists/screens/artists_selection_screen.dart';
+import 'package:classipod/features/music/cover_flow/models/cover_flow_album.dart';
 import 'package:classipod/features/music/cover_flow/screens/cover_flow_album_selection_screen.dart';
 import 'package:classipod/features/music/cover_flow/screens/cover_flow_screen.dart';
 import 'package:classipod/features/music/genres/screens/genre_songs_screen.dart';
@@ -57,9 +58,11 @@ enum Routes {
   musicMenu,
   neteaseLibrary,
   neteaseTracks,
+  neteaseRadar,
   coverFlow,
   coverFlowSelection,
   artists,
+  artistTracks,
   artistAlbums,
   artistAlbumsMoreOptions,
   albums,
@@ -110,11 +113,14 @@ enum Routes {
       case neteaseLibrary:
       case neteaseTracks:
         return '网易云音乐';
+      case neteaseRadar:
+        return '私人雷达';
       case coverFlow:
         return context.localization.coverFlowScreenTitle;
       case coverFlowSelection:
         return context.localization.coverFlowScreenTitle;
       case artists:
+      case artistTracks:
         return context.localization.artistsScreenTitle;
       case artistAlbums:
         return context.localization.artistsScreenTitle;
@@ -290,6 +296,14 @@ final routerProvider = Provider(
                     ],
                   ),
                   GoRoute(
+                    path: Routes.neteaseRadar.name,
+                    name: Routes.neteaseRadar.name,
+                    parentNavigatorKey: rootNavigatorKey,
+                    pageBuilder: (context, state) => const CupertinoPage(
+                      child: NeteaseTracksScreen(privateRadar: true),
+                    ),
+                  ),
+                  GoRoute(
                     path: Routes.nowPlaying.toString(),
                     name: Routes.nowPlaying.name,
                     parentNavigatorKey: rootNavigatorKey,
@@ -368,29 +382,23 @@ final routerProvider = Provider(
                           }
                           return const CupertinoPage(child: CoverFlowScreen());
                         },
-                        routes: [
-                          GoRoute(
-                            path: Routes.coverFlowSelection.name,
-                            name: Routes.coverFlowSelection.name,
-                            parentNavigatorKey: rootNavigatorKey,
-                            pageBuilder: (context, state) =>
-                                CustomTransitionPage(
-                                  opaque: false,
-                                  barrierColor: kCupertinoModalBarrierColor,
-                                  transitionDuration: const Duration(
-                                    milliseconds: 500,
-                                  ),
-                                  reverseTransitionDuration: const Duration(
-                                    milliseconds: 500,
-                                  ),
-                                  transitionsBuilder: (context, _, _, child) =>
-                                      child,
-                                  child: CoverFlowAlbumSelectionScreen(
-                                    albumDetail: state.extra as AlbumModel,
-                                  ),
-                                ),
+                      ),
+                      GoRoute(
+                        path: Routes.coverFlowSelection.name,
+                        name: Routes.coverFlowSelection.name,
+                        parentNavigatorKey: rootNavigatorKey,
+                        pageBuilder: (context, state) => CustomTransitionPage(
+                          opaque: false,
+                          barrierColor: kCupertinoModalBarrierColor,
+                          transitionDuration: const Duration(milliseconds: 500),
+                          reverseTransitionDuration: const Duration(
+                            milliseconds: 500,
                           ),
-                        ],
+                          transitionsBuilder: (context, _, _, child) => child,
+                          child: CoverFlowAlbumSelectionScreen(
+                            album: state.extra as CoverFlowAlbum,
+                          ),
+                        ),
                       ),
                       GoRoute(
                         path: Routes.artists.name,
@@ -400,6 +408,16 @@ final routerProvider = Provider(
                           child: ArtistsSelectionScreen(),
                         ),
                         routes: [
+                          GoRoute(
+                            path: Routes.artistTracks.name,
+                            name: Routes.artistTracks.name,
+                            parentNavigatorKey: rootNavigatorKey,
+                            pageBuilder: (context, state) => CupertinoPage(
+                              child: NeteaseTracksScreen(
+                                artist: state.extra as NeteaseArtist,
+                              ),
+                            ),
+                          ),
                           GoRoute(
                             path: ":artistName",
                             name: Routes.artistAlbums.name,

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:classipod/core/navigation/routes.dart';
+import 'package:classipod/features/backup/services/backup_service.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
@@ -105,6 +106,7 @@ class _NeteaseLoginScreenState extends ConsumerState<NeteaseLoginScreen>
       if (status == NeteaseQrStatus.confirmed) {
         _timer?.cancel();
         ref.invalidate(neteaseSessionProvider);
+        await ref.read(backupServiceProvider).writeAutomaticBackup();
         await Future<void>.delayed(const Duration(milliseconds: 600));
         if (mounted) context.pop();
       }
@@ -117,6 +119,7 @@ class _NeteaseLoginScreenState extends ConsumerState<NeteaseLoginScreen>
 
   Future<void> _logout() async {
     await ref.read(neteaseServiceProvider).logout();
+    await ref.read(backupServiceProvider).writeAutomaticBackup();
     ref.invalidate(neteaseSessionProvider);
     await _createQr();
   }

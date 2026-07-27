@@ -80,6 +80,33 @@ void main() {
     );
   });
 
+  test('private radar has a direct menu route', () {
+    expect(
+      providerContainer
+          .read(routerProvider)
+          .namedLocation(Routes.neteaseRadar.name),
+      '/menu/neteaseRadar',
+    );
+  });
+
+  test('artist tracks are a direct child of the artist list', () {
+    expect(
+      providerContainer
+          .read(routerProvider)
+          .namedLocation(Routes.artistTracks.name),
+      '/menu/musicMenu/artists/artistTracks',
+    );
+  });
+
+  test('shared collection panel is not nested under cover flow', () {
+    expect(
+      providerContainer
+          .read(routerProvider)
+          .namedLocation(Routes.coverFlowSelection.name),
+      '/menu/musicMenu/coverFlowSelection',
+    );
+  });
+
   testWidgets('music source applies only after leaving settings', (
     WidgetTester tester,
   ) async {

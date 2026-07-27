@@ -39,6 +39,13 @@ class DeviceFrame extends ConsumerWidget {
                 colors: deviceColorStyle.frameGradientColors,
               )
             : null,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x40000000),
+            blurRadius: 28,
+            offset: Offset(10, 0),
+          ),
+        ],
       ),
       child: Stack(
         fit: StackFit.expand,

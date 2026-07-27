@@ -106,9 +106,7 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
           icon: CupertinoIcons.shuffle,
           contentText: "$songCount ${context.localization.songsScreenTitle}",
         );
-      } else if (splitScreenType == SplitScreenType.netease ||
-          (splitScreenType == SplitScreenType.albumArt &&
-              currentSettings.musicSource == MusicSource.netease)) {
+      } else if (splitScreenType == SplitScreenType.netease) {
         splitScreenWidget = const IconPreviewWidget(
           titleText: '网易云音乐',
           icon: CupertinoIcons.music_albums,
@@ -241,31 +239,51 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
                   ),
                 ),
                 Expanded(
-                  child: SlideTransition(
-                    position: _rightSlideAnimation,
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 500),
-                      transitionBuilder: (widget, animation) {
-                        if (splitScreenType == SplitScreenType.albumArt) {
-                          final slideAnimation = Tween<Offset>(
-                            begin: const Offset(1, 0),
-                            end: Offset.zero,
-                          ).animate(animation);
-                          return FadeTransition(
-                            opacity: animation,
-                            child: SlideTransition(
-                              position: slideAnimation,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      SlideTransition(
+                        position: _rightSlideAnimation,
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 500),
+                          transitionBuilder: (widget, animation) {
+                            if (splitScreenType == SplitScreenType.albumArt) {
+                              final slideAnimation = Tween<Offset>(
+                                begin: const Offset(1, 0),
+                                end: Offset.zero,
+                              ).animate(animation);
+                              return FadeTransition(
+                                opacity: animation,
+                                child: SlideTransition(
+                                  position: slideAnimation,
+                                  child: widget,
+                                ),
+                              );
+                            }
+                            return FadeTransition(
+                              opacity: animation,
                               child: widget,
+                            );
+                          },
+                          child: splitScreenWidget,
+                        ),
+                      ),
+                      const Positioned(
+                        top: 0,
+                        bottom: 0,
+                        left: 0,
+                        width: 20,
+                        child: IgnorePointer(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0x66000000), Color(0x00000000)],
+                              ),
                             ),
-                          );
-                        }
-                        return FadeTransition(
-                          opacity: animation,
-                          child: widget,
-                        );
-                      },
-                      child: splitScreenWidget,
-                    ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

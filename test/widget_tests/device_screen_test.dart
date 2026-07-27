@@ -32,7 +32,7 @@ class _SettingsController extends SettingsPreferencesControllerNotifier {
 }
 
 void main() {
-  testWidgets('inner screen has 5px corners without layout spacing', (
+  testWidgets('inner screen follows the black border inner corners', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -57,6 +57,6 @@ void main() {
     expect(container.padding, isNull);
     expect(container.child, isA<ClipRRect>());
     final clip = container.child! as ClipRRect;
-    expect(clip.borderRadius, BorderRadius.circular(5));
+    expect(clip.borderRadius, BorderRadius.circular(4));
   });
 }

@@ -22,6 +22,10 @@ final neteaseSessionProvider =
       NeteaseSessionNotifier.new,
     );
 
+final neteaseArtistsProvider = FutureProvider<List<NeteaseArtist>>(
+  (ref) => ref.watch(neteaseServiceProvider).artists(),
+);
+
 class NeteaseSessionNotifier extends AsyncNotifier<NeteaseProfile?> {
   @override
   Future<NeteaseProfile?> build() =>
@@ -47,6 +51,8 @@ class NeteaseService {
   final Map<NeteaseCollectionKind, Future<List<NeteaseCollection>>>
   _libraryCache = {};
   final Map<String, Future<List<NeteaseTrack>>> _tracksCache = {};
+  Future<List<NeteaseArtist>>? _artistsCache;
+  final Map<String, Future<List<NeteaseTrack>>> _artistSongsCache = {};
   final String _deviceId = List.generate(
     16,
     (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
@@ -58,6 +64,21 @@ class NeteaseService {
 
   Future<NeteaseProfile?> restoreProfile() async {
     await _restore();
+    // Older backups stored the session cookie without the profile snapshot.
+    // Rehydrate the profile from the existing session so those backups remain
+    // usable without forcing another QR login.
+    if (_profile == null && _cookies.containsKey('MUSIC_U')) {
+      try {
+        final account = await _postWeapi(
+          'https://music.163.com/weapi/w/nuser/account/get',
+          const {},
+        ).timeout(const Duration(seconds: 8));
+        _profile = NeteaseParser.profile(account);
+        await _persist();
+      } on Object {
+        // Keep the restored cookie; the next authenticated request can retry.
+      }
+    }
     return _profile;
   }
 
@@ -93,7 +114,7 @@ class NeteaseService {
     _clearCaches();
     _cookies.clear();
     _profile = null;
-    final preferences = await SharedPreferences.getInstance();
+    final preferences = SharedPreferencesAsync();
     await Future.wait([
       preferences.remove(_cookiesKey),
       preferences.remove(_profileKey),
@@ -111,6 +132,84 @@ class NeteaseService {
       final _ = _libraryCache.remove(kind);
       rethrow;
     }
+  }
+
+  Future<NeteaseCollection> privateRadar() async {
+    await _requireProfile();
+    return NeteaseParser.privateRadar(
+      await _postWeapi(
+        'https://music.163.com/weapi/v1/discovery/recommend/resource',
+        const {},
+      ),
+    );
+  }
+
+  Future<List<NeteaseArtist>> artists() async {
+    final cached = _artistsCache;
+    if (cached != null) return cached;
+    final request = _loadArtists();
+    _artistsCache = request;
+    try {
+      return await request;
+    } catch (_) {
+      _artistsCache = null;
+      rethrow;
+    }
+  }
+
+  Future<List<NeteaseArtist>> _loadArtists() async {
+    await _requireProfile();
+    return NeteaseParser.artists(
+      await _postWeapi('https://music.163.com/weapi/artist/sublist', {
+        'offset': '0',
+        'limit': '1000',
+        'total': 'true',
+      }),
+    );
+  }
+
+  Future<List<NeteaseTrack>> artistSongs(String artistId) async {
+    final cached = _artistSongsCache[artistId];
+    if (cached != null) return cached;
+    final request = _loadArtistSongs(artistId);
+    _artistSongsCache[artistId] = request;
+    try {
+      return await request;
+    } catch (_) {
+      final _ = _artistSongsCache.remove(artistId);
+      rethrow;
+    }
+  }
+
+  Future<List<NeteaseTrack>> _loadArtistSongs(String artistId) async {
+    await _requireProfile();
+    const limit = 100;
+    var offset = 0;
+    var more = true;
+    final songs = <NeteaseTrack>[];
+    final ids = <String>{};
+    while (more) {
+      final root =
+          await _postPlain('https://music.163.com/api/v1/artist/songs', {
+            'id': artistId,
+            'private_cloud': 'true',
+            'work_type': '1',
+            'order': 'hot',
+            'offset': '$offset',
+            'limit': '$limit',
+          });
+      final page = NeteaseParser.artistSongs(root);
+      final previousCount = songs.length;
+      for (final song in page) {
+        if (ids.add(song.id)) songs.add(song);
+      }
+      more =
+          root['more'] == true &&
+          page.isNotEmpty &&
+          songs.length > previousCount;
+      offset += page.length;
+    }
+    return songs;
   }
 
   Future<List<NeteaseCollection>> _loadLibrary(
@@ -325,7 +424,8 @@ class NeteaseService {
     );
     final playlist = root['playlist'];
     if (playlist is! Map) throw const FormatException('歌单详情缺少 playlist');
-    final tracks = NeteaseParser.playlistTracks(root);
+    final cover = NeteaseParser.coverUrlFromCollection(playlist);
+    final tracks = NeteaseParser.playlistTracks(root, fallbackCover: cover);
     final requestedIds = (playlist['trackIds'] as List? ?? const [])
         .whereType<Map>()
         .map((item) => item['id'])
@@ -365,17 +465,32 @@ class NeteaseService {
   void _clearCaches() {
     _libraryCache.clear();
     _tracksCache.clear();
+    _artistsCache = null;
+    _artistSongsCache.clear();
   }
 
   Future<void> _restore() async {
     if (_restored) return;
-    final preferences = await SharedPreferences.getInstance();
-    final cookiesJson = preferences.getString(_cookiesKey);
-    final profileJson = preferences.getString(_profileKey);
+    final preferences = SharedPreferencesAsync();
+    final cookiesJson = await preferences.getString(_cookiesKey);
+    final profileJson = await preferences.getString(_profileKey);
     if (cookiesJson != null) {
-      final values = jsonDecode(cookiesJson);
-      if (values is Map) {
-        _cookies.addAll(values.map((key, value) => MapEntry('$key', '$value')));
+      try {
+        final values = jsonDecode(cookiesJson);
+        if (values is Map) {
+          _cookies.addAll(
+            values.map((key, value) => MapEntry('$key', '$value')),
+          );
+        }
+      } on FormatException {
+        // Accept the cookie-header representation used by older backups.
+        for (final pair in cookiesJson.split(';')) {
+          final separator = pair.indexOf('=');
+          if (separator <= 0) continue;
+          _cookies[pair.substring(0, separator).trim()] = pair
+              .substring(separator + 1)
+              .trim();
+        }
       }
     }
     if (profileJson != null) {
@@ -390,7 +505,7 @@ class NeteaseService {
   }
 
   Future<void> _persist() async {
-    final preferences = await SharedPreferences.getInstance();
+    final preferences = SharedPreferencesAsync();
     await preferences.setString(_cookiesKey, jsonEncode(_cookies));
     if (_profile != null) {
       await preferences.setString(_profileKey, jsonEncode(_profile!.toJson()));

@@ -75,6 +75,24 @@ class SettingsPreferencesRepository {
         NeteaseFlacQuality.lossless.name;
   }
 
+  String getLocalMusicFolderPath() =>
+      _sharedPreferencesWithCache.getString(
+        SharedPreferencesKeys.localMusicFolderPath.name,
+      ) ??
+      '';
+
+  double getCoverRatio() =>
+      _sharedPreferencesWithCache.getDouble(
+        SharedPreferencesKeys.coverRatio.name,
+      ) ??
+      1;
+
+  Future<void> setCoverRatio({required double ratio}) =>
+      _sharedPreferencesWithCache.setDouble(
+        SharedPreferencesKeys.coverRatio.name,
+        ratio,
+      );
+
   String getClickWheelSensitivity() {
     return _sharedPreferencesWithCache.getString(
           SharedPreferencesKeys.clickWheelSensitivity.name,
@@ -186,6 +204,13 @@ class SettingsPreferencesRepository {
     return _sharedPreferencesWithCache.setString(
       SharedPreferencesKeys.neteaseFlacQuality.name,
       qualityName,
+    );
+  }
+
+  Future<void> setLocalMusicFolderPath({required String path}) async {
+    return _sharedPreferencesWithCache.setString(
+      SharedPreferencesKeys.localMusicFolderPath.name,
+      path,
     );
   }
 

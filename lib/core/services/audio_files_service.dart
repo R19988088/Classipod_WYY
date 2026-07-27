@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/constants/online_audio_files_metadata.dart';
 import 'package:classipod/core/models/music_metadata.dart';
-import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/repositories/metadata_reader_repository.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
@@ -13,7 +12,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:on_audio_query/on_audio_query.dart';
 
 final audioFilesServiceProvider =
     AsyncNotifierProvider<
@@ -39,69 +37,55 @@ class AudioFilesServiceNotifier
         return UnmodifiableListView([]);
       }
       // Fetch metadata from local files
+      if (ref
+          .read(settingsPreferencesControllerProvider)
+          .localMusicFolderPath
+          .isEmpty) {
+        return UnmodifiableListView([]);
+      }
       final Box<MusicMetadata> metadataBox = Hive.box<MusicMetadata>(
         Constants.metadataBoxName,
       );
-      // Check if the metadata box is empty
-      if (metadataBox.isEmpty) {
-        if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-          final newDirectory = await FilePicker.getDirectoryPath(
-            dialogTitle: "Select Music Directory",
-            lockParentWindow: true,
-            initialDirectory: ref
-                .read(deviceDirectoryProvider)
-                .requireValue
-                .musicFolderPath,
-          );
-          if (newDirectory != null) {
-            final result = await compute(
-              ref
-                  .read(metadataReaderRepositoryProvider)
-                  .extractMetadataFromDirectory,
-              newDirectory,
-            );
-            await metadataBox.addAll(result);
-            return UnmodifiableListView(result);
-          } else {
-            return UnmodifiableListView([]);
-          }
-        } else if (Platform.isIOS) {
-          final pickedFiles = await FilePicker.pickFiles(
-            allowMultiple: true,
-            dialogTitle: "Pick Song Files",
-          );
-
-          if (pickedFiles == null || pickedFiles.files.isEmpty) {
-            return UnmodifiableListView([]);
-          }
-
-          final result = await compute(
-            ref.read(metadataReaderRepositoryProvider).extractMetadataFromFiles,
-            pickedFiles.files.map((f) => f.path!).toList(),
-          );
-
-          await metadataBox.addAll(result);
-          return UnmodifiableListView(result);
-        }
-        // On Android Automatically Fetch Music Files
-        else {
-          final OnAudioQuery audioQuery = OnAudioQuery();
-          final queriedSongs = await audioQuery.querySongs();
-
-          final result = await compute(
-            ref.read(metadataReaderRepositoryProvider).extractMetadataFromFiles,
-            queriedSongs.map((e) => e.data).toList(growable: false),
-          );
-          await metadataBox.addAll(result);
-          return UnmodifiableListView(result);
-        }
-      }
-      // Return cached metadata
-      else {
-        return UnmodifiableListView(metadataBox.values);
-      }
+      // Startup only reads metadata already imported by an explicit user
+      // action. Directory traversal must never happen from a provider build.
+      return UnmodifiableListView(metadataBox.values);
     } catch (e) {
       return UnmodifiableListView([]);
     }
+  }
+
+  /// Imports the selected local folder. This is the only directory scan entry.
+  Future<void> scanSelectedFolder() async {
+    if (ref.read(settingsPreferencesControllerProvider).musicSource !=
+        MusicSource.local) {
+      return;
+    }
+    final selectedFolder = ref
+        .read(settingsPreferencesControllerProvider)
+        .localMusicFolderPath;
+    if (selectedFolder.isEmpty) return;
+    final metadataBox = Hive.box<MusicMetadata>(Constants.metadataBoxName);
+    final result = Platform.isIOS
+        ? await _pickFiles()
+        : await compute(
+            ref
+                .read(metadataReaderRepositoryProvider)
+                .extractMetadataFromDirectory,
+            selectedFolder,
+          );
+    await metadataBox.clear();
+    await metadataBox.addAll(result);
+  }
+
+  Future<List<MusicMetadata>> _pickFiles() async {
+    final pickedFiles = await FilePicker.pickFiles(
+      allowMultiple: true,
+      dialogTitle: 'Pick Song Files',
+    );
+    if (pickedFiles == null || pickedFiles.files.isEmpty) return const [];
+    return compute(
+      ref.read(metadataReaderRepositoryProvider).extractMetadataFromFiles,
+      pickedFiles.files.map((file) => file.path!).toList(),
+    );
   }
 }

@@ -91,6 +91,66 @@ void main() {
       expect(podcasts.single.trackCount, 4);
     });
 
+    test('finds the private radar in recommended playlists', () {
+      final radar = NeteaseParser.privateRadar({
+        'code': 200,
+        'recommend': [
+          {'id': 1, 'name': '每日歌曲推荐'},
+          {
+            'id': 2,
+            'name': '私人雷达 · 每日更新',
+            'picUrl': 'http://radar',
+            'trackCount': 30,
+            'creator': {'nickname': '网易云音乐'},
+          },
+        ],
+      });
+
+      expect(radar.id, '2');
+      expect(radar.title, '私人雷达 · 每日更新');
+      expect(radar.coverUrl, 'https://radar');
+      expect(radar.kind, NeteaseCollectionKind.playlist);
+    });
+
+    test('rejects recommended playlists without a private radar', () {
+      expect(
+        () => NeteaseParser.privateRadar({
+          'code': 200,
+          'recommend': [
+            {'id': 1, 'name': '每日歌曲推荐'},
+          ],
+        }),
+        throwsFormatException,
+      );
+    });
+
+    test('parses followed artists and artist songs', () {
+      final artists = NeteaseParser.artists({
+        'code': 200,
+        'data': [
+          {'id': 7, 'name': 'Singer', 'picUrl': 'http://artist'},
+        ],
+      });
+      final songs = NeteaseParser.artistSongs({
+        'code': 200,
+        'songs': [
+          {
+            'id': 9,
+            'name': 'Song',
+            'ar': [
+              {'name': 'Singer'},
+            ],
+            'al': {'name': 'Album'},
+            'dt': 1234,
+          },
+        ],
+      });
+
+      expect(artists.single.id, '7');
+      expect(artists.single.coverUrl, 'https://artist');
+      expect(songs.single.title, 'Song');
+    });
+
     test('parses regular tracks and podcast main songs', () {
       final tracks = NeteaseParser.tracks({
         'code': 200,

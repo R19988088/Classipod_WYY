@@ -1,7 +1,12 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:classipod/core/navigation/routes.dart';
+import 'package:classipod/core/services/media_cache.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
+import 'package:classipod/features/device/services/device_buttons_service_provider.dart';
+import 'package:classipod/features/music/cover_flow/controllers/cover_flow_favorites_controller.dart';
+import 'package:classipod/features/music/cover_flow/models/cover_flow_album.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
@@ -49,6 +54,21 @@ class _NeteaseLibraryScreenState extends ConsumerState<NeteaseLibraryScreen>
   }
 
   @override
+  Future<void> onSelectLongPress() async {
+    if (_collections.isEmpty) {
+      return;
+    }
+    await _toggleCoverFlow(_collections[selectedDisplayItem]);
+  }
+
+  Future<void> _toggleCoverFlow(NeteaseCollection collection) async {
+    setState(() => selectedDisplayItem = _collections.indexOf(collection));
+    await ref
+        .read(coverFlowFavoritesControllerProvider.notifier)
+        .toggleNetease(collection);
+  }
+
+  @override
   void initState() {
     super.initState();
     unawaited(_load());
@@ -64,6 +84,9 @@ class _NeteaseLibraryScreenState extends ConsumerState<NeteaseLibraryScreen>
           .read(neteaseServiceProvider)
           .library(widget.kind);
       if (!mounted) return;
+      await ref
+          .read(coverFlowFavoritesControllerProvider.notifier)
+          .hydrateNeteaseCovers(collections);
       setState(() {
         _collections = collections;
         selectedDisplayItem = 0;
@@ -77,15 +100,32 @@ class _NeteaseLibraryScreenState extends ConsumerState<NeteaseLibraryScreen>
 
   void _open(NeteaseCollection collection) {
     setState(() => selectedDisplayItem = _collections.indexOf(collection));
-    context.goNamed(
-      Routes.neteaseTracks.name,
-      pathParameters: {'kind': widget.kind.name},
-      extra: collection,
+    unawaited(
+      context.pushNamed(
+        Routes.coverFlowSelection.name,
+        extra: CoverFlowAlbum(
+          source: CoverFlowAlbumSource.netease,
+          id: collection.id,
+          title: collection.title,
+          firstArtist: CoverFlowAlbum.firstPerformer(collection.subtitle),
+          coverUri: collection.coverUrl,
+          kind: switch (collection.kind) {
+            NeteaseCollectionKind.album => CoverFlowCollectionKind.album,
+            NeteaseCollectionKind.playlist => CoverFlowCollectionKind.playlist,
+            NeteaseCollectionKind.podcast => CoverFlowCollectionKind.podcast,
+          },
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final favoriteIds = ref
+        .watch(coverFlowFavoritesControllerProvider)
+        .netease
+        .map((album) => album.id)
+        .toSet();
     return CupertinoPageScaffold(
       child: Column(
         children: [
@@ -111,15 +151,54 @@ class _NeteaseLibraryScreenState extends ConsumerState<NeteaseLibraryScreen>
                     );
                   }
                   final collection = _collections[index];
+                  final heroTag = CoverFlowAlbum(
+                    source: CoverFlowAlbumSource.netease,
+                    id: collection.id,
+                    title: collection.title,
+                    firstArtist: CoverFlowAlbum.firstPerformer(
+                      collection.subtitle,
+                    ),
+                    kind: switch (collection.kind) {
+                      NeteaseCollectionKind.album =>
+                        CoverFlowCollectionKind.album,
+                      NeteaseCollectionKind.playlist =>
+                        CoverFlowCollectionKind.playlist,
+                      NeteaseCollectionKind.podcast =>
+                        CoverFlowCollectionKind.podcast,
+                    },
+                  ).heroTag;
                   return SettingsListTile(
+                    heroTag: heroTag,
+                    leading: collection.coverUrl.isEmpty
+                        ? null
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: CachedNetworkImage(
+                              imageUrl: collection.coverUrl,
+                              httpHeaders: neteaseImageHeaders,
+                              cacheManager: PersistentCoverCache.instance,
+                              width: 26,
+                              height: 26,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 104,
+                              errorWidget: (_, _, _) =>
+                                  const SizedBox(width: 26, height: 26),
+                            ),
+                          ),
                     text: collection.title,
                     value: collection.subtitle.isEmpty
                         ? collection.trackCount == null
                               ? null
                               : '${collection.trackCount} 首'
-                        : collection.subtitle,
+                        : '${favoriteIds.contains(collection.id) ? '★ ' : ''}${collection.subtitle}',
                     isSelected: selectedDisplayItem == index,
                     onTap: () => _open(collection),
+                    onLongPress: () async {
+                      await ref
+                          .read(deviceButtonsServiceProvider.notifier)
+                          .buttonPressVibrate();
+                      await _toggleCoverFlow(collection);
+                    },
                   );
                 },
               ),

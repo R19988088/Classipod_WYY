@@ -2,6 +2,18 @@ enum NeteaseCollectionKind { album, playlist, podcast }
 
 enum NeteaseQrStatus { expired, waiting, scanned, confirmed }
 
+class NeteaseArtist {
+  const NeteaseArtist({
+    required this.id,
+    required this.name,
+    required this.coverUrl,
+  });
+
+  final String id;
+  final String name;
+  final String coverUrl;
+}
+
 class NeteaseProfile {
   const NeteaseProfile({
     required this.id,
@@ -60,6 +72,15 @@ class NeteaseTrack {
   final String album;
   final int durationMs;
   final String? coverUrl;
+
+  NeteaseTrack copyWith({String? coverUrl}) => NeteaseTrack(
+    id: id,
+    title: title,
+    artist: artist,
+    album: album,
+    durationMs: durationMs,
+    coverUrl: coverUrl ?? this.coverUrl,
+  );
 }
 
 class NeteaseQrChallenge {

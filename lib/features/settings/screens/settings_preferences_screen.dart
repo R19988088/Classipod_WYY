@@ -1,12 +1,16 @@
 import 'dart:async';
 
+import 'package:classipod/core/alerts/dialogs.dart';
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/extensions/build_context_extensions.dart';
 import 'package:classipod/core/navigation/routes.dart';
+import 'package:classipod/core/providers/shared_preferences_with_cache_provider.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
+import 'package:classipod/features/backup/services/backup_service.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
 import 'package:classipod/features/menu/controller/split_screen_controller.dart';
 import 'package:classipod/features/menu/models/split_screen_type.dart';
+import 'package:classipod/features/music/cover_flow/controllers/cover_flow_favorites_controller.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
@@ -15,6 +19,7 @@ import 'package:classipod/features/settings/models/netease_audio_format.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/settings/widgets/settings_list_tile.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,16 +27,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 enum _SettingsDisplayItems {
   musicSource,
+  localMusicFolder,
   neteaseLogin,
   neteaseAudioFormat,
   neteaseBitrate,
-  about,
+  exportBackup,
+  importBackup,
   shuffle,
   repeat,
   language,
   appTheme,
   deviceColor,
   clickWheelSize,
+  coverRatio,
   clickWheelSensitivity,
   isTouchScreenEnabled,
   vibrate,
@@ -43,18 +51,25 @@ enum _SettingsDisplayItems {
   rescanMusicFiles,
   excludeDirectories,
   resetSettings,
+  about,
   donate;
 
   String title(BuildContext context) {
     switch (this) {
       case musicSource:
         return '音乐源';
+      case localMusicFolder:
+        return '添加本地音乐文件夹';
       case neteaseLogin:
         return '网易云登录';
       case neteaseAudioFormat:
         return '格式';
       case neteaseBitrate:
         return '码率';
+      case exportBackup:
+        return '导出备份';
+      case importBackup:
+        return '选择备份文件载入';
       case about:
         return context.localization.aboutScreenTitle;
       case shuffle:
@@ -71,6 +86,8 @@ enum _SettingsDisplayItems {
         return context.localization.deviceColorSettingTitle;
       case clickWheelSize:
         return context.localization.clickWheelSizeSettingTitle;
+      case coverRatio:
+        return '封面比例';
       case clickWheelSensitivity:
         return context.localization.clickWheelSensitivitySettingTitle;
       case volumeMode:
@@ -160,6 +177,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
             .read(settingsPreferencesControllerProvider.notifier)
             .toggleMusicSource();
         break;
+      case _SettingsDisplayItems.localMusicFolder:
+        await _selectLocalMusicFolder();
+        break;
       case _SettingsDisplayItems.neteaseLogin:
         context.goNamed(Routes.neteaseLogin.name);
         break;
@@ -172,6 +192,31 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         await ref
             .read(settingsPreferencesControllerProvider.notifier)
             .toggleNeteaseBitrate();
+        break;
+      case _SettingsDisplayItems.exportBackup:
+        try {
+          final exported = await ref
+              .read(backupServiceProvider)
+              .exportSelectedFile();
+          if (exported && mounted) {
+            await Dialogs.showInfoDialog(
+              context: context,
+              title: '备份完成',
+              content: '设置、网易云登录状态和 Cover Flow 收藏已导出。',
+            );
+          }
+        } catch (error) {
+          if (mounted) {
+            await Dialogs.showInfoDialog(
+              context: context,
+              title: '导出失败',
+              content: '$error',
+            );
+          }
+        }
+        break;
+      case _SettingsDisplayItems.importBackup:
+        await _importSelectedBackup();
         break;
       case _SettingsDisplayItems.about:
         context.goNamed(Routes.about.name);
@@ -199,6 +244,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         await ref
             .read(settingsPreferencesControllerProvider.notifier)
             .toggleClickWheelSize();
+        break;
+      case _SettingsDisplayItems.coverRatio:
+        await ref
+            .read(settingsPreferencesControllerProvider.notifier)
+            .toggleCoverRatio();
         break;
       case _SettingsDisplayItems.clickWheelSensitivity:
         await ref
@@ -262,6 +312,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
     }
   }
 
+  Future<void> _selectLocalMusicFolder() async {
+    final path = await FilePicker.getDirectoryPath(
+      dialogTitle: '选择本地音乐文件夹',
+      lockParentWindow: true,
+    );
+    if (path == null || !mounted) return;
+    await ref
+        .read(settingsPreferencesControllerProvider.notifier)
+        .setLocalMusicFolderPath(path);
+    await ref
+        .read(settingsPreferencesControllerProvider.notifier)
+        .rescanMusicFiles();
+  }
+
+  Future<void> _importSelectedBackup() async {
+    try {
+      final service = ref.read(backupServiceProvider);
+      final backup = await service.pickBackupFile();
+      if (backup == null) return;
+      await service.restore(backup);
+      await ref
+          .read(sharedPreferencesWithCacheProvider)
+          .requireValue
+          .reloadCache();
+      ref.invalidate(settingsPreferencesControllerProvider);
+      ref.invalidate(coverFlowFavoritesControllerProvider);
+      ref.invalidate(neteaseServiceProvider);
+      ref.invalidate(neteaseSessionProvider);
+      final restoredSettings = ref.read(settingsPreferencesControllerProvider);
+      if (mounted) {
+        await Dialogs.showInfoDialog(
+          context: context,
+          title: '备份已载入',
+          content: '设置、登录状态和 Cover Flow 收藏已恢复。',
+        );
+      }
+      if (restoredSettings.musicSource == MusicSource.netease) {
+        await ref.read(neteaseServiceProvider).restoreProfile();
+        await ref
+            .read(settingsPreferencesControllerProvider.notifier)
+            .setInitialRepeatMode();
+        ref.read(routerProvider).goNamed(Routes.menu.name);
+      } else {
+        ref.read(routerProvider).goNamed(Routes.splash.name);
+      }
+    } catch (error) {
+      if (mounted) {
+        await Dialogs.showInfoDialog(
+          context: context,
+          title: '载入失败',
+          content: '$error',
+        );
+      }
+    }
+  }
+
   bool? _isOn(
     SettingsPreferencesModel settingsState,
     _SettingsDisplayItems settingsItem,
@@ -293,6 +399,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         return settingsState.musicSource == MusicSource.netease
             ? '网易云音乐'
             : '本地音乐';
+      case _SettingsDisplayItems.localMusicFolder:
+        return settingsState.localMusicFolderPath.isEmpty
+            ? '未选择'
+            : settingsState.localMusicFolderPath;
       case _SettingsDisplayItems.neteaseLogin:
         return ref.watch(neteaseSessionProvider).value?.nickname ?? '未登录';
       case _SettingsDisplayItems.neteaseAudioFormat:
@@ -305,6 +415,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
         return settingsState.deviceColor.title(context);
       case _SettingsDisplayItems.clickWheelSize:
         return settingsState.clickWheelSize.title(context);
+      case _SettingsDisplayItems.coverRatio:
+        return settingsState.coverRatio.toStringAsFixed(1);
       case _SettingsDisplayItems.clickWheelSensitivity:
         return settingsState.clickWheelSensitivity.title(context);
       case _SettingsDisplayItems.appTheme:

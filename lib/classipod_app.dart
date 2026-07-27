@@ -1,5 +1,7 @@
 import 'package:classipod/core/extensions/build_context_extensions.dart';
 import 'package:classipod/core/navigation/routes.dart';
+import 'package:classipod/features/backup/services/backup_service.dart';
+import 'package:classipod/features/backup/widgets/backup_restore_prompt.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/l10n/generated/app_localizations.dart';
 import 'package:flutter/cupertino.dart';
@@ -10,6 +12,9 @@ class ClassipodApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen(settingsPreferencesControllerProvider, (_, _) {
+      ref.read(backupServiceProvider).scheduleAutomaticBackup();
+    });
     final languageLocaleCode = ref.watch(
       settingsPreferencesControllerProvider.select(
         (value) => value.languageLocaleCode,
@@ -27,6 +32,7 @@ class ClassipodApp extends ConsumerWidget {
       routerConfig: router,
       locale: Locale(languageLocaleCode),
       theme: appTheme.toCupertinoTheme(),
+      builder: (context, child) => BackupRestorePrompt(child: child!),
     );
   }
 }

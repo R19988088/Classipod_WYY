@@ -5,9 +5,12 @@ import 'package:classipod/core/navigation/routes.dart';
 import 'package:classipod/core/providers/filtered_audio_files_provider.dart';
 import 'package:classipod/core/widgets/empty_state_widget.dart';
 import 'package:classipod/features/custom_screen_elements/custom_screen.dart';
+import 'package:classipod/features/device/services/device_buttons_service_provider.dart';
 import 'package:classipod/features/music/album/models/album_model.dart';
 import 'package:classipod/features/music/album/providers/album_details_provider.dart';
 import 'package:classipod/features/music/album/widgets/album_list_tile.dart';
+import 'package:classipod/features/music/cover_flow/controllers/cover_flow_favorites_controller.dart';
+import 'package:classipod/features/music/cover_flow/models/cover_flow_album.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,20 +42,14 @@ class _AlbumsSelectionScreenState extends ConsumerState<AlbumsSelectionScreen>
       _navigateToAlbumSelectionScreen(selectedDisplayItem);
 
   @override
-  Future<void> onSelectLongPress() =>
-      _navigateToAlbumMoreOptionsScreen(selectedDisplayItem);
+  Future<void> onSelectLongPress() => _toggleCoverFlow(selectedDisplayItem);
 
-  Future<void> _navigateToAlbumMoreOptionsScreen(int index) async {
+  Future<void> _toggleCoverFlow(int index) async {
     setState(() => selectedDisplayItem = index);
-    //If the index is 0, it means the user has selected the "All Albums" option
-    if (index == 0) {
-      return;
-    } else {
-      await context.pushNamed(
-        Routes.albumMoreOptions.name,
-        extra: displayItems[index - 1],
-      );
-    }
+    if (index == 0) return;
+    await ref
+        .read(coverFlowFavoritesControllerProvider.notifier)
+        .toggleLocal(displayItems[index - 1]);
   }
 
   void _navigateToAlbumSelectionScreen(int index) {
@@ -67,12 +64,29 @@ class _AlbumsSelectionScreenState extends ConsumerState<AlbumsSelectionScreen>
         ),
       );
     } else {
-      context.goNamed(Routes.albumSongs.name, extra: displayItems[index - 1]);
+      final album = displayItems[index - 1];
+      unawaited(
+        context.pushNamed(
+          Routes.coverFlowSelection.name,
+          extra: CoverFlowAlbum(
+            source: CoverFlowAlbumSource.local,
+            id: CoverFlowAlbum.localId(album.albumArtistName, album.albumName),
+            title: album.albumName,
+            firstArtist: CoverFlowAlbum.firstPerformer(album.albumArtistName),
+            coverUri: album.albumArtPath,
+          ),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final favoriteIds = ref
+        .watch(coverFlowFavoritesControllerProvider)
+        .local
+        .map((album) => album.id)
+        .toSet();
     if (displayItems.isEmpty) {
       return CupertinoPageScaffold(
         child: Column(
@@ -130,10 +144,31 @@ class _AlbumsSelectionScreenState extends ConsumerState<AlbumsSelectionScreen>
 
                   return AlbumListTile(
                     albumDetails: displayItems[index - 1],
+                    heroTag: CoverFlowAlbum(
+                      source: CoverFlowAlbumSource.local,
+                      id: CoverFlowAlbum.localId(
+                        displayItems[index - 1].albumArtistName,
+                        displayItems[index - 1].albumName,
+                      ),
+                      title: displayItems[index - 1].albumName,
+                      firstArtist: CoverFlowAlbum.firstPerformer(
+                        displayItems[index - 1].albumArtistName,
+                      ),
+                    ).heroTag,
+                    isCoverFlowFavorite: favoriteIds.contains(
+                      CoverFlowAlbum.localId(
+                        displayItems[index - 1].albumArtistName,
+                        displayItems[index - 1].albumName,
+                      ),
+                    ),
                     isSelected: selectedDisplayItem == index,
                     onTap: () async => _navigateToAlbumSelectionScreen(index),
-                    onLongPress: () async =>
-                        _navigateToAlbumMoreOptionsScreen(index),
+                    onLongPress: () async {
+                      await ref
+                          .read(deviceButtonsServiceProvider.notifier)
+                          .buttonPressVibrate();
+                      await _toggleCoverFlow(index);
+                    },
                   );
                 },
               ),

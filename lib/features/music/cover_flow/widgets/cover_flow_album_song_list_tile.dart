@@ -22,6 +22,21 @@ class CoverFlowAlbumSongListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textStyle = CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+      fontFamily: 'sans-serif',
+      fontSize: 16,
+      fontWeight: FontWeight.bold,
+      height: 1,
+      color: isSelected
+          ? context.appInverseTextColor
+          : context.appPrimaryTextColor,
+    );
+    final strutStyle = StrutStyle.fromTextStyle(
+      textStyle,
+      forceStrutHeight: true,
+    );
+    const textHeightBehavior = TextHeightBehavior();
+
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
@@ -43,23 +58,23 @@ class CoverFlowAlbumSongListTile extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Flexible(
+                Expanded(
                   flex: 5,
-                  child: MarqueeText(
-                    songName,
-                    style: CupertinoTheme.of(context).textTheme.textStyle
-                        .copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? context.appInverseTextColor
-                              : context.appPrimaryTextColor,
-                        ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: MarqueeText(
+                      songName,
+                      style: textStyle,
+                      strutStyle: strutStyle,
+                      textHeightBehavior: textHeightBehavior,
+                    ),
                   ),
                 ),
-                Flexible(
+                const SizedBox(width: 8),
+                Align(
+                  alignment: Alignment.centerRight,
                   child: isCurrentlyPlaying
                       ? Icon(
                           CupertinoIcons.volume_up,
@@ -70,14 +85,9 @@ class CoverFlowAlbumSongListTile extends StatelessWidget {
                         )
                       : Text(
                           songDuration.getMinuteAndSecondString,
-                          style: CupertinoTheme.of(context).textTheme.textStyle
-                              .copyWith(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: isSelected
-                                    ? context.appInverseTextColor
-                                    : context.appPrimaryTextColor,
-                              ),
+                          style: textStyle,
+                          strutStyle: strutStyle,
+                          textHeightBehavior: textHeightBehavior,
                           maxLines: 1,
                         ),
                 ),

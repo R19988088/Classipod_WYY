@@ -231,13 +231,13 @@ class _CoverFlowAlbumSelectionScreenState
         );
         if (playableIndex < 0) throw StateError('该曲目当前账号无播放权限');
         final coverMetadata =
-            _neteaseCollection!.kind == NeteaseCollectionKind.playlist
+            _neteaseCollection.kind == NeteaseCollectionKind.playlist
             ? metadata
                   .map(
                     (item) => item.copyWith(
-                      albumName: _neteaseCollection!.title,
+                      albumName: _neteaseCollection.title,
                       albumArtistName: CoverFlowAlbum.firstPerformer(
-                        _neteaseCollection!.subtitle,
+                        _neteaseCollection.subtitle,
                       ),
                     ),
                   )
@@ -318,12 +318,9 @@ class _CoverFlowAlbumSelectionScreenState
       tag: widget.album.heroTag,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(40, 10, 40, 0),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
+        child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(3),
-            color: CupertinoColors.white,
-            border: Border.all(),
             boxShadow: [
               BoxShadow(
                 color: CupertinoColors.black.withValues(alpha: .16),
@@ -332,105 +329,124 @@ class _CoverFlowAlbumSelectionScreenState
               ),
             ],
           ),
-          child: Column(
-            children: [
-              SizedBox(
-                height: 50,
-                width: double.infinity,
-                child: DecoratedBox(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppPalette.selectedTileGradientColor1,
-                        AppPalette.selectedTileGradientColor2,
-                      ],
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.album.title,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: CupertinoColors.white,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: DecoratedBox(
+              decoration: const BoxDecoration(color: CupertinoColors.white),
+              child: DecoratedBox(
+                position: DecorationPosition.foreground,
+                decoration: BoxDecoration(border: Border.all()),
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 50,
+                      width: double.infinity,
+                      child: DecoratedBox(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              AppPalette.selectedTileGradientColor1,
+                              AppPalette.selectedTileGradientColor2,
+                            ],
                           ),
-                          maxLines: 1,
                         ),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: MarqueeText(
-                                widget.album.firstArtist,
-                                mode: TextScrollMode.bouncing,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: CupertinoColors.white,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    widget.album.title,
+                                    style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: CupertinoColors.white,
+                                    ),
+                                    maxLines: 1,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '${displayItems.length} 首',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: CupertinoColors.white,
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: MarqueeText(
+                                        widget.album.firstArtist,
+                                        mode: TextScrollMode.bouncing,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          color: CupertinoColors.white,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      '${displayItems.length} 首',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        color: CupertinoColors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        child: Text(
+                          _error!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                      ),
+                    Flexible(
+                      child: CupertinoScrollbar(
+                        controller: scrollController,
+                        child: ListView.builder(
+                          controller: scrollController,
+                          itemCount: displayItems.length,
+                          prototypeItem: CoverFlowAlbumSongListTile(
+                            songName: '',
+                            songDuration: Duration.zero,
+                            isSelected: false,
+                            isCurrentlyPlaying: false,
+                            onTap: () {},
+                          ),
+                          itemBuilder: (context, index) =>
+                              CoverFlowAlbumSongListTile(
+                                songName: _titleAt(index),
+                                songDuration: Duration(
+                                  milliseconds: _durationAt(index),
+                                ),
+                                isSelected: selectedDisplayItem == index,
+                                isCurrentlyPlaying:
+                                    currentlyPlayingOriginalIndex ==
+                                    _originalIndexAt(index),
+                                onTap: () => displayItems[index] == null
+                                    ? unawaited(_loadNeteaseTracks())
+                                    : unawaited(_play(index)),
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 6,
-                    vertical: 2,
-                  ),
-                  child: Text(
-                    _error!,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                ),
-              Flexible(
-                child: CupertinoScrollbar(
-                  controller: scrollController,
-                  child: ListView.builder(
-                    controller: scrollController,
-                    itemCount: displayItems.length,
-                    prototypeItem: CoverFlowAlbumSongListTile(
-                      songName: '',
-                      songDuration: Duration.zero,
-                      isSelected: false,
-                      isCurrentlyPlaying: false,
-                      onTap: () {},
-                    ),
-                    itemBuilder: (context, index) => CoverFlowAlbumSongListTile(
-                      songName: _titleAt(index),
-                      songDuration: Duration(milliseconds: _durationAt(index)),
-                      isSelected: selectedDisplayItem == index,
-                      isCurrentlyPlaying:
-                          currentlyPlayingOriginalIndex ==
-                          _originalIndexAt(index),
-                      onTap: () => displayItems[index] == null
-                          ? unawaited(_loadNeteaseTracks())
-                          : unawaited(_play(index)),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),

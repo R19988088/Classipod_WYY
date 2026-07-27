@@ -8,6 +8,9 @@ class SettingsListTile extends StatelessWidget {
   final String? value;
   final bool isSelected;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
+  final String? heroTag;
+  final Widget? leading;
 
   const SettingsListTile({
     super.key,
@@ -15,12 +18,31 @@ class SettingsListTile extends StatelessWidget {
     this.value,
     required this.isSelected,
     required this.onTap,
+    this.onLongPress,
+    this.heroTag,
+    this.leading,
   });
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    final primaryTextStyle = CupertinoTheme.of(context).textTheme.textStyle
+        .copyWith(
+          fontFamily: 'sans-serif',
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          height: 1,
+          color: isSelected
+              ? context.appInverseTextColor
+              : context.appPrimaryTextColor,
+        );
+    final strutStyle = StrutStyle.fromTextStyle(
+      primaryTextStyle,
+      forceStrutHeight: true,
+    );
+    const textHeightBehavior = TextHeightBehavior();
+    final tile = GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: SizedBox(
         height: 30,
         width: double.infinity,
@@ -43,6 +65,7 @@ class SettingsListTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               spacing: 5,
               children: [
+                if (leading != null) ...[leading!, const SizedBox(width: 8)],
                 Expanded(
                   flex: value == null ? 1 : 7,
                   child: MarqueeText(
@@ -52,14 +75,9 @@ class SettingsListTile extends StatelessWidget {
                     delayBefore: const Duration(seconds: 2),
                     pauseBetween: const Duration(seconds: 2),
                     pauseOnBounce: const Duration(seconds: 2),
-                    style: CupertinoTheme.of(context).textTheme.textStyle
-                        .copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: isSelected
-                              ? context.appInverseTextColor
-                              : context.appPrimaryTextColor,
-                        ),
+                    style: primaryTextStyle,
+                    strutStyle: strutStyle,
+                    textHeightBehavior: textHeightBehavior,
                   ),
                 ),
                 if (value != null)
@@ -73,14 +91,13 @@ class SettingsListTile extends StatelessWidget {
                       delayBefore: const Duration(seconds: 2),
                       pauseBetween: const Duration(seconds: 2),
                       pauseOnBounce: const Duration(seconds: 2),
-                      style: CupertinoTheme.of(context).textTheme.textStyle
-                          .copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? context.appInverseTextColor
-                                : context.appSecondaryTextColor,
-                          ),
+                      style: primaryTextStyle.copyWith(
+                        color: isSelected
+                            ? context.appInverseTextColor
+                            : context.appSecondaryTextColor,
+                      ),
+                      strutStyle: strutStyle,
+                      textHeightBehavior: textHeightBehavior,
                     ),
                   ),
                 if (value == null && isSelected)
@@ -94,5 +111,6 @@ class SettingsListTile extends StatelessWidget {
         ),
       ),
     );
+    return heroTag == null ? tile : Hero(tag: heroTag!, child: tile);
   }
 }

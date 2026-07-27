@@ -15,6 +15,8 @@ enum SharedPreferencesKeys {
   neteaseAudioFormat,
   neteaseMp3Bitrate,
   neteaseFlacQuality,
+  localMusicFolderPath,
+  coverRatio,
   isMenuFirstTime,
   isNowPlayingFirstTime,
   isInputTextBarFirstTime,

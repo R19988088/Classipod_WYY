@@ -27,6 +27,8 @@ class SettingsPreferencesModel {
   final NeteaseAudioFormat neteaseAudioFormat;
   final NeteaseMp3Bitrate neteaseMp3Bitrate;
   final NeteaseFlacQuality neteaseFlacQuality;
+  final String localMusicFolderPath;
+  final double coverRatio;
 
   SettingsPreferencesModel({
     required this.languageLocaleCode,
@@ -46,6 +48,8 @@ class SettingsPreferencesModel {
     this.neteaseMp3Bitrate = NeteaseMp3Bitrate.kbps320,
     this.neteaseFlacQuality = NeteaseFlacQuality.lossless,
     this.fetchOnlineMusic = false,
+    this.localMusicFolderPath = '',
+    this.coverRatio = 1,
   });
 
   SettingsPreferencesModel copyWith({
@@ -66,6 +70,8 @@ class SettingsPreferencesModel {
     NeteaseAudioFormat? neteaseAudioFormat,
     NeteaseMp3Bitrate? neteaseMp3Bitrate,
     NeteaseFlacQuality? neteaseFlacQuality,
+    String? localMusicFolderPath,
+    double? coverRatio,
   }) {
     return SettingsPreferencesModel(
       languageLocaleCode: languageLocaleCode ?? this.languageLocaleCode,
@@ -86,6 +92,8 @@ class SettingsPreferencesModel {
       neteaseAudioFormat: neteaseAudioFormat ?? this.neteaseAudioFormat,
       neteaseMp3Bitrate: neteaseMp3Bitrate ?? this.neteaseMp3Bitrate,
       neteaseFlacQuality: neteaseFlacQuality ?? this.neteaseFlacQuality,
+      localMusicFolderPath: localMusicFolderPath ?? this.localMusicFolderPath,
+      coverRatio: coverRatio ?? this.coverRatio,
     );
   }
 
@@ -108,6 +116,8 @@ class SettingsPreferencesModel {
         other.neteaseAudioFormat == neteaseAudioFormat &&
         other.neteaseMp3Bitrate == neteaseMp3Bitrate &&
         other.neteaseFlacQuality == neteaseFlacQuality &&
+        other.localMusicFolderPath == localMusicFolderPath &&
+        other.coverRatio == coverRatio &&
         other.appTheme == appTheme;
   }
 
@@ -130,5 +140,7 @@ class SettingsPreferencesModel {
     neteaseAudioFormat,
     neteaseMp3Bitrate,
     neteaseFlacQuality,
+    localMusicFolderPath,
+    coverRatio,
   );
 }

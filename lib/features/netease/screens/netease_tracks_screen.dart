@@ -7,6 +7,7 @@ import 'package:classipod/features/music/songs/widgets/condensed_song_list_tile.
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/models/now_playing_model.dart';
+import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,9 +15,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class NeteaseTracksScreen extends ConsumerStatefulWidget {
-  const NeteaseTracksScreen({super.key, required this.collection});
+  const NeteaseTracksScreen({
+    super.key,
+    this.collection,
+    this.artist,
+    this.privateRadar = false,
+  }) : assert(collection != null || artist != null || privateRadar);
 
-  final NeteaseCollection collection;
+  final NeteaseCollection? collection;
+  final NeteaseArtist? artist;
+  final bool privateRadar;
 
   @override
   ConsumerState<NeteaseTracksScreen> createState() =>
@@ -29,9 +37,17 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
   String? _error;
   bool _loading = true;
   bool _startingPlayback = false;
+  NeteaseCollection? _resolvedCollection;
+
+  NeteaseCollection? get _collection =>
+      _resolvedCollection ?? widget.collection;
 
   @override
-  String get routeName => Routes.neteaseTracks.name;
+  String get routeName => widget.privateRadar
+      ? Routes.neteaseRadar.name
+      : widget.artist == null
+      ? Routes.neteaseTracks.name
+      : Routes.artistTracks.name;
 
   @override
   List<Object?> get displayItems => _tracks.isEmpty ? const [null] : _tracks;
@@ -57,9 +73,13 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
       _error = null;
     });
     try {
-      final tracks = await ref
-          .read(neteaseServiceProvider)
-          .tracks(widget.collection);
+      final service = ref.read(neteaseServiceProvider);
+      if (widget.privateRadar) {
+        _resolvedCollection = await service.privateRadar();
+      }
+      final tracks = widget.artist == null
+          ? await service.tracks(_collection!)
+          : await service.artistSongs(widget.artist!.id);
       if (mounted) setState(() => _tracks = tracks);
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
@@ -76,24 +96,37 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
       _error = null;
     });
     try {
+      final targetId = int.parse(_tracks[index].id);
+      final currentId = ref
+          .read(nowPlayingDetailsProvider)
+          .currentMetadata
+          ?.originalSongIndex;
+      if (currentId == targetId) {
+        if (mounted) await context.pushNamed(Routes.nowPlaying.name);
+        return;
+      }
       final settings = ref.read(settingsPreferencesControllerProvider);
+      final tracksToResolve = widget.artist == null
+          ? _tracks
+          : [_tracks[index]];
       final metadata = await ref
           .read(neteaseServiceProvider)
           .playableTracks(
-            _tracks,
+            tracksToResolve,
             preferredTrackId: _tracks[index].id,
             format: settings.neteaseAudioFormat,
             mp3Bitrate: settings.neteaseMp3Bitrate,
             flacQuality: settings.neteaseFlacQuality,
           );
-      final targetId = int.parse(_tracks[index].id);
       final playableIndex = metadata.indexWhere(
         (item) => item.originalSongIndex == targetId,
       );
       if (playableIndex < 0) throw StateError('该曲目当前账号无播放权限');
       final player = ref.read(audioPlayerServiceProvider.notifier);
       await player.setAudioSource(
-        nowPlayingType: widget.collection.kind == NeteaseCollectionKind.album
+        nowPlayingType:
+            widget.artist != null ||
+                _collection!.kind == NeteaseCollectionKind.album
             ? NowPlayingType.album
             : NowPlayingType.playlist,
         musicMetadataList: metadata,
@@ -114,7 +147,7 @@ class _NeteaseTracksScreenState extends ConsumerState<NeteaseTracksScreen>
     return CupertinoPageScaffold(
       child: Column(
         children: [
-          StatusBar(title: widget.collection.title),
+          StatusBar(title: widget.artist?.name ?? _collection?.title ?? '私人雷达'),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),

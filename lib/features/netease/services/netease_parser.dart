@@ -1,6 +1,41 @@
 import 'package:classipod/features/netease/models/netease_models.dart';
 
 abstract final class NeteaseParser {
+  static List<NeteaseArtist> artists(Map<String, dynamic> root) {
+    _requireCode(root, 200, '收藏艺术家');
+    final items = root['data'];
+    if (items is! List) throw const FormatException('艺术家响应缺少 data');
+    return items
+        .whereType<Map>()
+        .map((item) {
+          final id = _integer(item['id']);
+          final name = _string(item['name']);
+          return id == null || name == null
+              ? null
+              : NeteaseArtist(
+                  id: '$id',
+                  name: name,
+                  coverUrl:
+                      _https(
+                        _string(item['picUrl']) ??
+                            _string(item['img1v1Url']) ??
+                            _string(item['coverUrl']),
+                      ) ??
+                      '',
+                );
+        })
+        .whereType<NeteaseArtist>()
+        .toList();
+  }
+
+  static String? coverUrlFromCollection(Map collection) => _https(
+    _string(collection['coverImgUrl']) ??
+        _string(collection['coverUrl']) ??
+        _string(collection['picUrl']) ??
+        _string(collection['backgroundCoverUrl']) ??
+        _string(collection['titleImageUrl']),
+  );
+
   static String qrKey(Map<String, dynamic> root) {
     _requireCode(root, 200, '创建登录二维码');
     final key =
@@ -59,6 +94,18 @@ abstract final class NeteaseParser {
         })
         .where((item) => item.id != 'null' && item.title.isNotEmpty)
         .toList();
+  }
+
+  static NeteaseCollection privateRadar(Map<String, dynamic> root) {
+    _requireCode(root, 200, '私人雷达');
+    final items = root['recommend'];
+    if (items is! List) throw const FormatException('推荐歌单响应缺少 recommend');
+    final matches = playlists({
+      'code': 200,
+      'playlist': items,
+    }).where((playlist) => playlist.title.startsWith('私人雷达'));
+    if (matches.isEmpty) throw const FormatException('当前账号未返回私人雷达');
+    return matches.first;
   }
 
   static List<NeteaseCollection> albums(Map<String, dynamic> root) {
@@ -129,11 +176,21 @@ abstract final class NeteaseParser {
         .toList();
   }
 
-  static List<NeteaseTrack> playlistTracks(Map<String, dynamic> root) {
+  static List<NeteaseTrack> artistSongs(Map<String, dynamic> root) =>
+      tracks(root);
+
+  static List<NeteaseTrack> playlistTracks(
+    Map<String, dynamic> root, {
+    String? fallbackCover,
+  }) {
     _requireCode(root, 200, '歌单详情');
     final playlist = root['playlist'];
     if (playlist is! Map) throw const FormatException('歌单详情缺少 playlist');
-    return tracks({'code': 200, 'songs': playlist['tracks'] ?? const []});
+    return tracks({'code': 200, 'songs': playlist['tracks'] ?? const []})
+        .map(
+          (track) => track.copyWith(coverUrl: track.coverUrl ?? fallbackCover),
+        )
+        .toList();
   }
 
   static List<NeteaseTrack> albumTracks(Map<String, dynamic> root) {
