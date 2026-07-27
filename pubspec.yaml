@@ -69,6 +69,7 @@ flutter:
 
   assets:
     - assets/
+    - assets/audio/white_noise/
     - assets/fonts/
     - assets/images/
 
