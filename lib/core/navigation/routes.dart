@@ -41,6 +41,8 @@ import 'package:classipod/features/settings/screens/device_color_selection_scree
 import 'package:classipod/features/settings/screens/exclude_directories_screen.dart';
 import 'package:classipod/features/settings/screens/language_selection_screen.dart';
 import 'package:classipod/features/settings/screens/settings_preferences_screen.dart';
+import 'package:classipod/features/white_noise/screens/white_noise_player_screen.dart';
+import 'package:classipod/features/white_noise/screens/white_noise_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +63,8 @@ enum Routes {
   neteaseTracks,
   neteaseRecommendations,
   neteaseRadar,
+  whiteNoise,
+  whiteNoisePlayer,
   coverFlow,
   coverFlowSelection,
   artists,
@@ -119,6 +123,9 @@ enum Routes {
         return '推荐';
       case neteaseRadar:
         return '私人雷达';
+      case whiteNoise:
+      case whiteNoisePlayer:
+        return '白噪音';
       case coverFlow:
         return context.localization.coverFlowScreenTitle;
       case coverFlowSelection:
@@ -306,6 +313,23 @@ final routerProvider = Provider(
                     pageBuilder: (context, state) => const CupertinoPage(
                       child: NeteaseRecommendationsScreen(),
                     ),
+                  ),
+                  GoRoute(
+                    path: Routes.whiteNoise.name,
+                    name: Routes.whiteNoise.name,
+                    parentNavigatorKey: rootNavigatorKey,
+                    pageBuilder: (context, state) =>
+                        const CupertinoPage(child: WhiteNoiseScreen()),
+                    routes: [
+                      GoRoute(
+                        path: Routes.whiteNoisePlayer.name,
+                        name: Routes.whiteNoisePlayer.name,
+                        parentNavigatorKey: rootNavigatorKey,
+                        pageBuilder: (context, state) => const CupertinoPage(
+                          child: WhiteNoisePlayerScreen(),
+                        ),
+                      ),
+                    ],
                   ),
                   GoRoute(
                     path: Routes.nowPlaying.toString(),

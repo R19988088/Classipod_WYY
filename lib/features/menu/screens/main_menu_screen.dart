@@ -30,6 +30,7 @@ enum _MainMenuDisplayItems {
   recommendations,
   playlists,
   podcasts,
+  whiteNoise,
   settings,
   shuffleSongs,
   nowPlaying;
@@ -50,6 +51,8 @@ enum _MainMenuDisplayItems {
         return '歌单';
       case podcasts:
         return '播客';
+      case whiteNoise:
+        return '白噪音';
       case settings:
         return context.localization.settingsScreenTitle;
       case shuffleSongs:
@@ -82,6 +85,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           _MainMenuDisplayItems.music,
           _MainMenuDisplayItems.coverFlow,
           _MainMenuDisplayItems.artists,
+          _MainMenuDisplayItems.whiteNoise,
           _MainMenuDisplayItems.settings,
           _MainMenuDisplayItems.shuffleSongs,
           _MainMenuDisplayItems.nowPlaying,
@@ -90,9 +94,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           _MainMenuDisplayItems.coverFlow,
           _MainMenuDisplayItems.artists,
           _MainMenuDisplayItems.albums,
-          _MainMenuDisplayItems.recommendations,
           _MainMenuDisplayItems.playlists,
           _MainMenuDisplayItems.podcasts,
+          _MainMenuDisplayItems.recommendations,
+          _MainMenuDisplayItems.whiteNoise,
           _MainMenuDisplayItems.settings,
           _MainMenuDisplayItems.shuffleSongs,
           _MainMenuDisplayItems.nowPlaying,
@@ -132,6 +137,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
         break;
       case _MainMenuDisplayItems.podcasts:
         _openLibrary(NeteaseCollectionKind.podcast);
+        break;
+      case _MainMenuDisplayItems.whiteNoise:
+        context.goNamed(Routes.whiteNoise.name);
         break;
       case _MainMenuDisplayItems.nowPlaying:
         await _navigateToNowPlayingScreen();
@@ -245,6 +253,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
       case _MainMenuDisplayItems.recommendations:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
             SplitScreenType.netease;
+        break;
+      case _MainMenuDisplayItems.whiteNoise:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.whiteNoise;
         break;
       case _MainMenuDisplayItems.settings:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =

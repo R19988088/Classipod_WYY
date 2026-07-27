@@ -16,6 +16,7 @@ class AlbumReflectiveArt extends StatefulWidget {
   final String heroTag;
   final bool tiltedImage;
   final bool flipOnEnter;
+  final String? assetPath;
 
   const AlbumReflectiveArt({
     super.key,
@@ -26,6 +27,7 @@ class AlbumReflectiveArt extends StatefulWidget {
     required this.heroTag,
     this.tiltedImage = false,
     this.flipOnEnter = false,
+    this.assetPath,
   });
 
   @override
@@ -52,6 +54,22 @@ class _AlbumReflectiveArtState extends State<AlbumReflectiveArt>
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  ImageProvider _imageProvider() {
+    if (widget.assetPath case final assetPath?) {
+      return AssetImage(assetPath);
+    }
+    if (widget.thumbnailPath case final thumbnailPath?) {
+      return widget.isOnDevice
+          ? FileImage(File(thumbnailPath))
+          : CachedNetworkImageProvider(
+              thumbnailPath,
+              headers: neteaseImageHeaders,
+              cacheManager: PersistentCoverCache.instance,
+            );
+    }
+    return const AssetImage(Assets.defaultAlbumCoverImage);
   }
 
   @override
@@ -144,15 +162,7 @@ class _AlbumReflectiveArtState extends State<AlbumReflectiveArt>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: Image(
-                      image: (widget.thumbnailPath != null)
-                          ? widget.isOnDevice
-                                ? FileImage(File(widget.thumbnailPath!))
-                                : CachedNetworkImageProvider(
-                                    widget.thumbnailPath!,
-                                    headers: neteaseImageHeaders,
-                                    cacheManager: PersistentCoverCache.instance,
-                                  )
-                          : const AssetImage(Assets.defaultAlbumCoverImage),
+                      image: _imageProvider(),
                       errorBuilder: (_, _, _) => Image.asset(
                         Assets.defaultAlbumCoverImage,
                         height: widget.imageWidth,
@@ -179,16 +189,7 @@ class _AlbumReflectiveArtState extends State<AlbumReflectiveArt>
                     Transform.flip(
                       flipY: true,
                       child: Image(
-                        image: (widget.thumbnailPath != null)
-                            ? widget.isOnDevice
-                                  ? FileImage(File(widget.thumbnailPath!))
-                                  : CachedNetworkImageProvider(
-                                      widget.thumbnailPath!,
-                                      headers: neteaseImageHeaders,
-                                      cacheManager:
-                                          PersistentCoverCache.instance,
-                                    )
-                            : const AssetImage(Assets.defaultAlbumCoverImage),
+                        image: _imageProvider(),
                         errorBuilder: (_, _, _) => Image.asset(
                           Assets.defaultAlbumCoverImage,
                           height: widget.reflectedImageHeight,

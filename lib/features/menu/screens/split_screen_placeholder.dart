@@ -116,6 +116,12 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
         splitScreenWidget = const SettingsPreviewWidget();
       } else if (splitScreenType == SplitScreenType.nowPlaying) {
         splitScreenWidget = const NowPlayingPreviewWidget();
+      } else if (splitScreenType == SplitScreenType.whiteNoise) {
+        splitScreenWidget = const IconPreviewWidget(
+          titleText: '白噪音',
+          icon: CupertinoIcons.waveform,
+          contentText: '噪音 · 雨 · 水 · 林',
+        );
       } else if (splitScreenType == SplitScreenType.language) {
         splitScreenWidget = const LanguagePreviewWidget();
       } else if (splitScreenType == SplitScreenType.appTheme) {
