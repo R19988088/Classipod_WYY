@@ -18,6 +18,7 @@ import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
+import 'package:classipod/features/white_noise/controllers/white_noise_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -230,7 +231,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   Future<void> _navigateToNowPlayingScreen() async {
     unawaited(ref.read(splitScreenViewControllerProvider).closeSplitView());
-    await context.pushNamed(Routes.nowPlaying.name, extra: Routes.menu.name);
+    if (ref.read(whiteNoiseControllerProvider) != null) {
+      await context.pushNamed(Routes.whiteNoisePlayer.name);
+    } else {
+      await context.pushNamed(Routes.nowPlaying.name, extra: Routes.menu.name);
+    }
     unawaited(ref.read(splitScreenViewControllerProvider).openSplitView());
   }
 

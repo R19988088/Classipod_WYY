@@ -6,6 +6,7 @@ import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/device/controllers/sleep_timer_controller.dart';
+import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/white_noise/models/white_noise_sound.dart';
 import 'package:classipod/features/white_noise/services/procedural_audio_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -34,7 +35,19 @@ final whiteNoiseControllerProvider =
 
 class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
   @override
-  WhiteNoiseSession? build() => null;
+  WhiteNoiseSession? build() {
+    ref.listen(
+      nowPlayingDetailsProvider.select(
+        (details) => details.currentMetadata?.filePath,
+      ),
+      (_, filePath) {
+        if (state != null && !_isWhiteNoisePath(filePath)) {
+          state = null;
+        }
+      },
+    );
+    return null;
+  }
 
   Future<void> start(WhiteNoiseCategory category) async {
     final sound = resolveWhiteNoiseSound(
@@ -108,7 +121,11 @@ class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
       trackDuration: whiteNoiseSessionDuration.inMilliseconds,
       filePath: sound.assetPath ?? 'procedural://${sound.name}',
       thumbnailPath: Assets.noiseImage,
-      isOnDevice: true,
     );
+  }
+
+  bool _isWhiteNoisePath(String? path) {
+    return path?.startsWith('procedural://') == true ||
+        path?.startsWith('assets/audio/white_noise/') == true;
   }
 }

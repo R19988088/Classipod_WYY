@@ -29,7 +29,7 @@ void main() {
 
   test('serves a range near the end without generating its prefix', () async {
     final source = ProceduralAudioSource(WhiteNoiseSound.waterfall, seed: 11);
-    final start = twoHourWavLength - 4096;
+    const start = twoHourWavLength - 4096;
     final response = await source.request(start, twoHourWavLength);
     final bytes = await response.stream.expand((chunk) => chunk).toList();
 

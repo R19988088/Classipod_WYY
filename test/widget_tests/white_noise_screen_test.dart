@@ -6,6 +6,7 @@ import 'package:classipod/features/white_noise/models/white_noise_sound.dart';
 import 'package:classipod/features/white_noise/screens/white_noise_player_screen.dart';
 import 'package:classipod/features/white_noise/screens/white_noise_screen.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:just_audio/just_audio.dart';
@@ -32,6 +33,17 @@ class _WhiteNoiseController extends WhiteNoiseController {
 }
 
 void main() {
+  testWidgets('all recorded loops are included in the Flutter asset bundle', (
+    tester,
+  ) async {
+    for (final sound in WhiteNoiseSound.values.where(
+      (sound) => sound.isRecorded,
+    )) {
+      final bytes = await rootBundle.load(sound.assetPath!);
+      expect(bytes.lengthInBytes, greaterThan(400000));
+    }
+  });
+
   testWidgets('shows exactly eight category entries with stable Hero tags', (
     tester,
   ) async {
