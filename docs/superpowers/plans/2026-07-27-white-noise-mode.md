@@ -31,10 +31,10 @@
 - 创建：`test/unit_tests/white_noise_sound_test.dart`
 - 创建：`lib/features/white_noise/models/white_noise_sound.dart`
 
-- [ ] 编写测试，断言八类顺序、噪音固定为 white、其他类解析结果属于自身候选、前后索引首尾循环。
-- [ ] 运行 `flutter test --no-pub test/unit_tests/white_noise_sound_test.dart --suppress-analytics`，确认因类型缺失失败。
-- [ ] 实现 `WhiteNoiseCategory`、`WhiteNoiseSound`、`resolveSound`、`nextCategory` 和 `previousCategory`。
-- [ ] 重跑测试并确认通过。
+- [x] 编写测试，断言八类顺序、噪音固定为 white、其他类解析结果属于自身候选、前后索引首尾循环。
+- [x] 运行 `flutter test --no-pub test/unit_tests/white_noise_sound_test.dart --suppress-analytics`，确认因类型缺失失败。
+- [x] 实现 `WhiteNoiseCategory`、`WhiteNoiseSound`、`resolveSound`、`nextCategory` 和 `previousCategory`。
+- [x] 重跑测试并确认通过。
 
 ### 任务 2：按范围生成的两小时算法流
 
@@ -42,11 +42,11 @@
 - 创建：`test/unit_tests/procedural_audio_source_test.dart`
 - 创建：`lib/features/white_noise/services/procedural_audio_source.dart`
 
-- [ ] 编写测试，验证 WAV 头、两小时总字节数、任意大偏移范围长度、同种子可重复、不同声音采样不同及越界裁剪。
-- [ ] 运行目标测试，确认因音源缺失失败。
-- [ ] 实现 44.1 kHz 单声道 16-bit PCM WAV 头和分块 `request(start, end)`。
-- [ ] 使用绝对采样位置的哈希噪声、频带插值、周期包络和确定性事件槽近似 18 种合成声音。
-- [ ] 重跑测试并确认通过。
+- [x] 编写测试，验证 WAV 头、两小时总字节数、任意大偏移范围长度、同种子可重复、不同声音采样不同及越界裁剪。
+- [x] 运行目标测试，确认因音源缺失失败。
+- [x] 实现 44.1 kHz 单声道 16-bit PCM WAV 头和分块 `request(start, end)`。
+- [x] 使用绝对采样位置的哈希噪声、频带插值、周期包络和确定性事件槽近似 18 种合成声音。
+- [x] 重跑测试并确认通过。
 
 ### 任务 3：睡眠定时与白噪音播放会话
 
@@ -57,12 +57,12 @@
 - 修改：`lib/core/services/audio_player_service.dart`
 - 创建：`lib/features/white_noise/controllers/white_noise_controller.dart`
 
-- [ ] 先写测试，验证 `start(120)`、算法源不循环、MP3 单曲循环、选择时立即播放、前后类别切换和普通队列被替换。
-- [ ] 运行目标测试，确认新增行为失败。
-- [ ] 给睡眠定时器增加 `start(int minutes)`，`cycle()` 复用该入口。
-- [ ] 给播放器服务增加 `setCustomAudioSource`，在播放器加载前同步 `NowPlayingModel` 元数据。
-- [ ] 实现白噪音控制器，注入随机数和音源工厂以便测试。
-- [ ] 重跑目标测试并确认通过。
+- [x] 先写测试，验证 `start(120)`、算法源不循环、MP3 单曲循环、选择时立即播放、前后类别切换和普通队列被替换。
+- [x] 运行目标测试，确认新增行为失败。
+- [x] 给睡眠定时器增加 `start(int minutes)`，`cycle()` 复用该入口。
+- [x] 给播放器服务增加 `setCustomAudioSource`，在播放器加载前同步 `NowPlayingModel` 元数据。
+- [x] 实现白噪音控制器，注入随机数和音源工厂以便测试。
+- [x] 重跑目标测试并确认通过。
 
 ### 任务 4：菜单、路由、列表与 Hero 播放页
 
@@ -74,12 +74,12 @@
 - 创建：`lib/features/white_noise/screens/white_noise_screen.dart`
 - 创建：`lib/features/white_noise/screens/white_noise_player_screen.dart`
 
-- [ ] 编写 Widget 测试，验证菜单顺序、八类文本、稳定 Hero tag，以及点击与 Select 调用同一播放入口。
-- [ ] 运行目标测试，确认路由和页面缺失导致失败。
-- [ ] 把推荐移至播客下方，并在设置上方加入白噪音入口。
-- [ ] 实现八类列表，列表项使用 `SettingsListTile.heroTag`。
-- [ ] 实现播放页，使用相同 tag 的 `AlbumReflectiveArt` 获得现有 Y 轴翻转，并把前后按钮交给白噪音控制器。
-- [ ] 注册两条 GoRouter 路由并重跑 Widget 测试。
+- [x] 编写 Widget 测试，验证菜单顺序、八类文本、稳定 Hero tag，以及点击与 Select 调用同一播放入口。
+- [x] 运行目标测试，确认路由和页面缺失导致失败。
+- [x] 把推荐移至播客下方，并在设置上方加入白噪音入口。
+- [x] 实现八类列表，列表项使用 `SettingsListTile.heroTag`。
+- [x] 实现播放页，使用相同 tag 的 `AlbumReflectiveArt` 获得现有 Y 轴翻转，并把前后按钮交给白噪音控制器。
+- [x] 注册两条 GoRouter 路由并重跑 Widget 测试。
 
 ### 任务 5：录音资源与发布元数据
 
@@ -95,17 +95,17 @@
 - 创建：`assets/audio/white_noise/AUDIO_CREDITS.md`
 - 修改：`pubspec.yaml`
 
-- [ ] 复制已核验的八个循环 MP3，并记录逐文件 CC0/公有领域来源。
-- [ ] 用 `afinfo` 检查八个文件均可解码且为单声道。
-- [ ] 运行 `flutter pub get --suppress-analytics` 并确认资源被 Flutter 收集。
+- [x] 复制已核验的八个循环 MP3，并记录逐文件 CC0/公有领域来源。
+- [x] 用 `afinfo` 检查八个文件均可解码且为单声道。
+- [x] 运行 `flutter pub get --suppress-analytics` 并确认资源被 Flutter 收集。
 
 ### 任务 6：集成验证
 
 **文件：**
 - 修改：仅修复本功能暴露的问题。
 
-- [ ] 运行 `dart format lib/features/white_noise lib/core/services/audio_player_service.dart lib/features/device/controllers/sleep_timer_controller.dart lib/features/menu/screens/main_menu_screen.dart lib/core/navigation/routes.dart test/unit_tests test/widget_tests`。
-- [ ] 运行白噪音相关目标测试并确认全部通过。
-- [ ] 运行 `flutter test --no-pub --coverage --suppress-analytics`。
-- [ ] 运行 `flutter analyze --suppress-analytics`。
-- [ ] 检查 `git diff --check`、资源总字节数和最终工作区差异，确保没有覆盖用户已有改动。
+- [x] 运行 `dart format lib/features/white_noise lib/core/services/audio_player_service.dart lib/features/device/controllers/sleep_timer_controller.dart lib/features/menu/screens/main_menu_screen.dart lib/core/navigation/routes.dart test/unit_tests test/widget_tests`。
+- [x] 运行白噪音相关目标测试并确认全部通过。
+- [x] 运行 `flutter test --no-pub --coverage --suppress-analytics`。
+- [x] 运行 `flutter analyze --suppress-analytics`。
+- [x] 检查 `git diff --check`、资源总字节数和最终工作区差异，确保没有覆盖用户已有改动。
