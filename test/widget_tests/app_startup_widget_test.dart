@@ -77,7 +77,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          deviceDirectoryProvider.overrideWith(
+          appStartupControllerProvider.overrideWith(
             (_) => throw Exception('Test Exception'),
           ),
         ],
