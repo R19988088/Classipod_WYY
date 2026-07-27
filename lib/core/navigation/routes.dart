@@ -31,6 +31,7 @@ import 'package:classipod/features/music/songs/screens/songs_screen.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
 import 'package:classipod/features/netease/screens/netease_library_screen.dart';
 import 'package:classipod/features/netease/screens/netease_login_screen.dart';
+import 'package:classipod/features/netease/screens/netease_recommendations_screen.dart';
 import 'package:classipod/features/netease/screens/netease_tracks_screen.dart';
 import 'package:classipod/features/now_playing/screen/now_playing_more_options_modal.dart';
 import 'package:classipod/features/now_playing/screen/now_playing_screen.dart';
@@ -58,6 +59,7 @@ enum Routes {
   musicMenu,
   neteaseLibrary,
   neteaseTracks,
+  neteaseRecommendations,
   neteaseRadar,
   coverFlow,
   coverFlowSelection,
@@ -113,6 +115,8 @@ enum Routes {
       case neteaseLibrary:
       case neteaseTracks:
         return '网易云音乐';
+      case neteaseRecommendations:
+        return '推荐';
       case neteaseRadar:
         return '私人雷达';
       case coverFlow:
@@ -296,11 +300,11 @@ final routerProvider = Provider(
                     ],
                   ),
                   GoRoute(
-                    path: Routes.neteaseRadar.name,
-                    name: Routes.neteaseRadar.name,
+                    path: Routes.neteaseRecommendations.name,
+                    name: Routes.neteaseRecommendations.name,
                     parentNavigatorKey: rootNavigatorKey,
                     pageBuilder: (context, state) => const CupertinoPage(
-                      child: NeteaseTracksScreen(privateRadar: true),
+                      child: NeteaseRecommendationsScreen(),
                     ),
                   ),
                   GoRoute(
@@ -387,18 +391,30 @@ final routerProvider = Provider(
                         path: Routes.coverFlowSelection.name,
                         name: Routes.coverFlowSelection.name,
                         parentNavigatorKey: rootNavigatorKey,
-                        pageBuilder: (context, state) => CustomTransitionPage(
-                          opaque: false,
-                          barrierColor: kCupertinoModalBarrierColor,
-                          transitionDuration: const Duration(milliseconds: 500),
-                          reverseTransitionDuration: const Duration(
-                            milliseconds: 500,
-                          ),
-                          transitionsBuilder: (context, _, _, child) => child,
-                          child: CoverFlowAlbumSelectionScreen(
-                            album: state.extra as CoverFlowAlbum,
-                          ),
-                        ),
+                        pageBuilder: (context, state) {
+                          final extra = state.extra;
+                          final recommendation =
+                              extra is NeteaseRecommendationSelection
+                              ? extra
+                              : null;
+                          return CustomTransitionPage(
+                            opaque: false,
+                            barrierColor: kCupertinoModalBarrierColor,
+                            transitionDuration: const Duration(
+                              milliseconds: 500,
+                            ),
+                            reverseTransitionDuration: const Duration(
+                              milliseconds: 500,
+                            ),
+                            transitionsBuilder: (context, _, _, child) => child,
+                            child: CoverFlowAlbumSelectionScreen(
+                              album:
+                                  recommendation?.album ??
+                                  extra as CoverFlowAlbum,
+                              recommendationKind: recommendation?.kind,
+                            ),
+                          );
+                        },
                       ),
                       GoRoute(
                         path: Routes.artists.name,

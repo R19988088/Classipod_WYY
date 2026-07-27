@@ -112,6 +112,29 @@ void main() {
       expect(radar.kind, NeteaseCollectionKind.playlist);
     });
 
+    test('parses daily recommended songs', () {
+      final tracks = NeteaseParser.dailyRecommendedTracks({
+        'code': 200,
+        'data': {
+          'dailySongs': [
+            {
+              'id': 42,
+              'name': '每日歌曲',
+              'ar': [
+                {'name': '歌手'},
+              ],
+              'al': {'name': '专辑', 'picUrl': 'http://daily-cover'},
+              'dt': 123000,
+            },
+          ],
+        },
+      });
+
+      expect(tracks.single.id, '42');
+      expect(tracks.single.title, '每日歌曲');
+      expect(tracks.single.coverUrl, 'https://daily-cover');
+    });
+
     test('rejects recommended playlists without a private radar', () {
       expect(
         () => NeteaseParser.privateRadar({

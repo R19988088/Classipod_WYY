@@ -80,15 +80,6 @@ void main() {
     );
   });
 
-  test('private radar has a direct menu route', () {
-    expect(
-      providerContainer
-          .read(routerProvider)
-          .namedLocation(Routes.neteaseRadar.name),
-      '/menu/neteaseRadar',
-    );
-  });
-
   test('artist tracks are a direct child of the artist list', () {
     expect(
       providerContainer

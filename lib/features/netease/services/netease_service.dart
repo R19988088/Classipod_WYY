@@ -144,6 +144,16 @@ class NeteaseService {
     );
   }
 
+  Future<List<NeteaseTrack>> dailyRecommendedTracks() async {
+    await _requireProfile();
+    return NeteaseParser.dailyRecommendedTracks(
+      await _postWeapi(
+        'https://music.163.com/weapi/v3/discovery/recommend/songs',
+        const {'afresh': 'true'},
+      ),
+    );
+  }
+
   Future<List<NeteaseArtist>> artists() async {
     final cached = _artistsCache;
     if (cached != null) return cached;

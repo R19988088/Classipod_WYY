@@ -108,6 +108,14 @@ abstract final class NeteaseParser {
     return matches.first;
   }
 
+  static List<NeteaseTrack> dailyRecommendedTracks(Map<String, dynamic> root) {
+    _requireCode(root, 200, '每日推荐');
+    final data = root['data'];
+    final items = data is Map ? data['dailySongs'] : null;
+    if (items is! List) throw const FormatException('每日推荐响应缺少 dailySongs');
+    return tracks({'code': 200, 'songs': items});
+  }
+
   static List<NeteaseCollection> albums(Map<String, dynamic> root) {
     _requireCode(root, 200, '收藏专辑');
     final items = root['data'] ?? root['playlist'];

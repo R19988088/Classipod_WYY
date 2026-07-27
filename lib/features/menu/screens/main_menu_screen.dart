@@ -27,7 +27,7 @@ enum _MainMenuDisplayItems {
   coverFlow,
   artists,
   albums,
-  privateRadar,
+  recommendations,
   playlists,
   podcasts,
   settings,
@@ -44,8 +44,8 @@ enum _MainMenuDisplayItems {
         return context.localization.artistsScreenTitle;
       case albums:
         return '专辑';
-      case privateRadar:
-        return '私人雷达';
+      case recommendations:
+        return '推荐';
       case playlists:
         return '歌单';
       case podcasts:
@@ -90,7 +90,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           _MainMenuDisplayItems.coverFlow,
           _MainMenuDisplayItems.artists,
           _MainMenuDisplayItems.albums,
-          _MainMenuDisplayItems.privateRadar,
+          _MainMenuDisplayItems.recommendations,
           _MainMenuDisplayItems.playlists,
           _MainMenuDisplayItems.podcasts,
           _MainMenuDisplayItems.settings,
@@ -124,8 +124,8 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
       case _MainMenuDisplayItems.albums:
         _openLibrary(NeteaseCollectionKind.album);
         break;
-      case _MainMenuDisplayItems.privateRadar:
-        context.goNamed(Routes.neteaseRadar.name);
+      case _MainMenuDisplayItems.recommendations:
+        context.goNamed(Routes.neteaseRecommendations.name);
         break;
       case _MainMenuDisplayItems.playlists:
         _openLibrary(NeteaseCollectionKind.playlist);
@@ -237,9 +237,12 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
             SplitScreenType.albumArt;
         break;
       case _MainMenuDisplayItems.albums:
-      case _MainMenuDisplayItems.privateRadar:
       case _MainMenuDisplayItems.playlists:
       case _MainMenuDisplayItems.podcasts:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.netease;
+        break;
+      case _MainMenuDisplayItems.recommendations:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
             SplitScreenType.netease;
         break;

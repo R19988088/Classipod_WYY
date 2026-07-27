@@ -15,6 +15,7 @@ import 'package:classipod/features/music/cover_flow/widgets/cover_flow_album_son
 import 'package:classipod/features/music/playlist/models/playlist_model.dart';
 import 'package:classipod/features/music/playlist/providers/playlists_provider.dart';
 import 'package:classipod/features/netease/models/netease_models.dart';
+import 'package:classipod/features/netease/screens/netease_recommendations_screen.dart';
 import 'package:classipod/features/netease/services/netease_service.dart';
 import 'package:classipod/features/now_playing/models/now_playing_model.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
@@ -24,9 +25,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class CoverFlowAlbumSelectionScreen extends ConsumerStatefulWidget {
-  const CoverFlowAlbumSelectionScreen({super.key, required this.album});
+  const CoverFlowAlbumSelectionScreen({
+    super.key,
+    required this.album,
+    this.recommendationKind,
+  });
 
   final CoverFlowAlbum album;
+  final NeteaseRecommendationKind? recommendationKind;
 
   @override
   ConsumerState createState() => _CoverFlowAlbumSelectionScreenState();
@@ -38,6 +44,7 @@ class _CoverFlowAlbumSelectionScreenState
   AlbumModel? _localAlbum;
   PlaylistModel? _localPlaylist;
   List<NeteaseTrack> _neteaseTracks = const [];
+  NeteaseCollection? _recommendationCollection;
   String? _error;
   bool _loading = false;
   bool _startingPlayback = false;
@@ -121,17 +128,19 @@ class _CoverFlowAlbumSelectionScreenState
     super.dispose();
   }
 
-  NeteaseCollection get _neteaseCollection => NeteaseCollection(
-    id: widget.album.id,
-    kind: switch (widget.album.kind) {
-      CoverFlowCollectionKind.album => NeteaseCollectionKind.album,
-      CoverFlowCollectionKind.playlist => NeteaseCollectionKind.playlist,
-      CoverFlowCollectionKind.podcast => NeteaseCollectionKind.podcast,
-    },
-    title: widget.album.title,
-    subtitle: widget.album.firstArtist,
-    coverUrl: widget.album.coverUri ?? '',
-  );
+  NeteaseCollection get _neteaseCollection =>
+      _recommendationCollection ??
+      NeteaseCollection(
+        id: widget.album.id,
+        kind: switch (widget.album.kind) {
+          CoverFlowCollectionKind.album => NeteaseCollectionKind.album,
+          CoverFlowCollectionKind.playlist => NeteaseCollectionKind.playlist,
+          CoverFlowCollectionKind.podcast => NeteaseCollectionKind.podcast,
+        },
+        title: widget.album.title,
+        subtitle: widget.album.firstArtist,
+        coverUrl: widget.album.coverUri ?? '',
+      );
 
   Future<void> _loadNeteaseTracks() async {
     if (_loading) return;
@@ -146,9 +155,16 @@ class _CoverFlowAlbumSelectionScreenState
       _error = null;
     });
     try {
-      final tracks = await ref
-          .read(neteaseServiceProvider)
-          .tracks(_neteaseCollection);
+      final service = ref.read(neteaseServiceProvider);
+      final tracks = switch (widget.recommendationKind) {
+        NeteaseRecommendationKind.daily =>
+          await service.dailyRecommendedTracks(),
+        NeteaseRecommendationKind.privateRadar => await () async {
+          _recommendationCollection = await service.privateRadar();
+          return service.tracks(_recommendationCollection!);
+        }(),
+        null => await service.tracks(_neteaseCollection),
+      };
       _tracksMemoryCache[cacheKey] = tracks;
       if (mounted) {
         setState(() => _neteaseTracks = tracks);
