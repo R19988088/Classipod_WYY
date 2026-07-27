@@ -150,6 +150,7 @@ void main() {
         .read(settingsPreferencesControllerProvider.notifier)
         .toggleMusicSource();
     await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(seconds: 3));
   });
 
@@ -202,9 +203,10 @@ void main() {
     await providerContainer
         .read(settingsPreferencesControllerProvider.notifier)
         .toggleMusicSource();
-    await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 
   testWidgets('Parameterized route reports its configured route name', (
@@ -217,21 +219,22 @@ void main() {
         child: const AppStartupScreen(app: ClassipodApp()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     providerContainer
         .read(routerProvider)
         .goNamed(Routes.neteaseLibrary.name, pathParameters: {'kind': 'album'});
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     expect(
       providerContainer.read(routerProvider).locationNamed,
       Routes.neteaseLibrary.name,
     );
 
-    await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump(const Duration(milliseconds: 200));
   });
 
   testWidgets('Sleep timer fades through hidden, 60, 120, and hidden', (
@@ -244,7 +247,7 @@ void main() {
         child: const AppStartupScreen(app: ClassipodApp()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 1));
 
     final button = find.byKey(const ValueKey('sleep-timer'));
     expect(button, findsOneWidget);
@@ -272,9 +275,9 @@ void main() {
     expect(find.text('120'), findsNothing);
     expect(providerContainer.read(sleepTimerControllerProvider), 0);
 
-    await tester.pumpWidget(const SizedBox.shrink());
     providerContainer.read(routerProvider).goNamed(Routes.splash.name);
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('Show Page Not Found on Error Screen', (
@@ -289,7 +292,9 @@ void main() {
     );
     await tester.pump();
     providerContainer.read(routerProvider).go("moosic/gibberish");
-    await tester.pumpAndSettle(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
     expect(find.byType(PageNotFoundScreen), findsOne);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
   });
 }

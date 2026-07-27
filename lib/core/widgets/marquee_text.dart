@@ -69,6 +69,7 @@ class _MarqueeTextState extends State<MarqueeText> {
   double? _originalTextWidth;
   double _textMinWidth = 0;
   Timer? _timer;
+  Timer? _delayTimer;
   bool _running = false;
   int _counter = 0;
 
@@ -94,6 +95,7 @@ class _MarqueeTextState extends State<MarqueeText> {
 
   @override
   void dispose() {
+    _delayTimer?.cancel();
     _timer?.cancel();
     _scrollController.dispose();
     super.dispose();
@@ -208,13 +210,19 @@ class _MarqueeTextState extends State<MarqueeText> {
     return fadeBorderWidget ?? baseWidget;
   }
 
-  Future<void> _initScroller(_) async {
+  void _initScroller(_) {
     setState(() {
       _textMinWidth = _scrollController.position.viewportDimension;
     });
 
-    await _delayBefore();
-    _setTimer();
+    final delayBefore = widget.delayBefore;
+    if (delayBefore == null) {
+      _setTimer();
+    } else {
+      _delayTimer = Timer(delayBefore, () {
+        if (_available) _setTimer();
+      });
+    }
   }
 
   /// Sets [_timer] for animation
@@ -333,13 +341,6 @@ class _MarqueeTextState extends State<MarqueeText> {
     if (widget.pauseBetween != null) {
       await Future<dynamic>.delayed(widget.pauseBetween!);
     }
-  }
-
-  Future<void> _delayBefore() async {
-    final Duration? delayBefore = widget.delayBefore;
-    if (delayBefore == null) return;
-
-    await Future<dynamic>.delayed(delayBefore);
   }
 
   Duration _getDuration(double extent) {

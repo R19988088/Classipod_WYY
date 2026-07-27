@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final albumDetailsProvider = Provider<List<AlbumModel>>((ref) {
   final List<AlbumModel> albumDetails = [];
-  final metadataList = ref.read(filteredAudioFilesProvider).requireValue;
+  final metadataList = ref.watch(filteredAudioFilesProvider).value;
+  if (metadataList == null) return albumDetails;
 
   for (int i = 0; i < metadataList.length; i++) {
     final albumDetail = AlbumModel(
