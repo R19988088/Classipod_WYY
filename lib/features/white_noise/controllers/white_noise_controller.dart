@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
@@ -7,6 +8,7 @@ import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/device/controllers/sleep_timer_controller.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
+import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/white_noise/models/white_noise_sound.dart';
 import 'package:classipod/features/white_noise/services/procedural_audio_source.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,6 +29,10 @@ class WhiteNoiseSession {
 }
 
 final whiteNoiseRandomProvider = Provider<Random>((ref) => Random());
+final whiteNoiseConfiguredLoopModeProvider = Provider<LoopMode>(
+  (ref) =>
+      ref.watch(settingsPreferencesControllerProvider).repeatMode.toLoopMode(),
+);
 
 final whiteNoiseControllerProvider =
     NotifierProvider<WhiteNoiseController, WhiteNoiseSession?>(
@@ -43,6 +49,11 @@ class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
       (_, filePath) {
         if (state != null && !_isWhiteNoisePath(filePath)) {
           state = null;
+          unawaited(
+            ref
+                .read(audioPlayerProvider)
+                .setLoopMode(ref.read(whiteNoiseConfiguredLoopModeProvider)),
+          );
         }
       },
     );
@@ -92,12 +103,12 @@ class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
       sound.isRecorded ? LoopMode.one : LoopMode.off,
     );
     ref.read(sleepTimerControllerProvider.notifier).start(120);
-    await playerService.play();
     state = WhiteNoiseSession(
       category: category,
       sound: sound,
       startedAt: DateTime.now(),
     );
+    unawaited(playerService.play());
   }
 
   Future<void> next() async {

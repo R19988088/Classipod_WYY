@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:classipod/core/models/music_metadata.dart';
@@ -15,6 +16,7 @@ class _RecordingAudioPlayer extends AudioPlayer {
   AudioSource? loadedSource;
   LoopMode? loadedLoopMode;
   int playCount = 0;
+  Completer<void>? playCompleter;
 
   @override
   Future<Duration?> setAudioSource(
@@ -35,6 +37,7 @@ class _RecordingAudioPlayer extends AudioPlayer {
   @override
   Future<void> play() async {
     playCount++;
+    await playCompleter?.future;
   }
 }
 
@@ -43,6 +46,7 @@ ProviderContainer _createContainer(_RecordingAudioPlayer player) {
     overrides: [
       audioPlayerProvider.overrideWithValue(player),
       whiteNoiseRandomProvider.overrideWithValue(Random(0)),
+      whiteNoiseConfiguredLoopModeProvider.overrideWithValue(LoopMode.off),
     ],
   );
 }
@@ -135,7 +139,8 @@ void main() {
 
     await container
         .read(whiteNoiseControllerProvider.notifier)
-        .start(WhiteNoiseCategory.noise);
+        .startSound(WhiteNoiseCategory.water, WhiteNoiseSound.ocean);
+    expect(player.loadedLoopMode, LoopMode.one);
     container
         .read(nowPlayingDetailsProvider.notifier)
         .setNewMetadataList(
@@ -145,5 +150,24 @@ void main() {
         );
 
     expect(container.read(whiteNoiseControllerProvider), isNull);
+    expect(player.loadedLoopMode, LoopMode.off);
+  });
+
+  test('starting a session does not wait for playback to end', () async {
+    final player = _RecordingAudioPlayer()..playCompleter = Completer<void>();
+    final container = _createContainer(player);
+    addTearDown(() async {
+      player.playCompleter?.complete();
+      container.dispose();
+      await player.dispose();
+    });
+
+    await container
+        .read(whiteNoiseControllerProvider.notifier)
+        .start(WhiteNoiseCategory.noise)
+        .timeout(const Duration(milliseconds: 200));
+
+    expect(container.read(whiteNoiseControllerProvider), isNotNull);
+    expect(player.playCount, 1);
   });
 }
