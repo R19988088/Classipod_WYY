@@ -18,6 +18,7 @@ import 'package:classipod/features/settings/models/music_source.dart';
 import 'package:classipod/features/settings/models/settings_preferences_model.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
 import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
+import 'package:classipod/features/white_noise/controllers/white_noise_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -30,6 +31,7 @@ enum _MainMenuDisplayItems {
   recommendations,
   playlists,
   podcasts,
+  whiteNoise,
   settings,
   shuffleSongs,
   nowPlaying;
@@ -50,6 +52,8 @@ enum _MainMenuDisplayItems {
         return '歌单';
       case podcasts:
         return '播客';
+      case whiteNoise:
+        return '白噪音';
       case settings:
         return context.localization.settingsScreenTitle;
       case shuffleSongs:
@@ -82,6 +86,7 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           _MainMenuDisplayItems.music,
           _MainMenuDisplayItems.coverFlow,
           _MainMenuDisplayItems.artists,
+          _MainMenuDisplayItems.whiteNoise,
           _MainMenuDisplayItems.settings,
           _MainMenuDisplayItems.shuffleSongs,
           _MainMenuDisplayItems.nowPlaying,
@@ -90,9 +95,10 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
           _MainMenuDisplayItems.coverFlow,
           _MainMenuDisplayItems.artists,
           _MainMenuDisplayItems.albums,
-          _MainMenuDisplayItems.recommendations,
           _MainMenuDisplayItems.playlists,
           _MainMenuDisplayItems.podcasts,
+          _MainMenuDisplayItems.recommendations,
+          _MainMenuDisplayItems.whiteNoise,
           _MainMenuDisplayItems.settings,
           _MainMenuDisplayItems.shuffleSongs,
           _MainMenuDisplayItems.nowPlaying,
@@ -132,6 +138,9 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
         break;
       case _MainMenuDisplayItems.podcasts:
         _openLibrary(NeteaseCollectionKind.podcast);
+        break;
+      case _MainMenuDisplayItems.whiteNoise:
+        context.goNamed(Routes.whiteNoise.name);
         break;
       case _MainMenuDisplayItems.nowPlaying:
         await _navigateToNowPlayingScreen();
@@ -222,7 +231,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
 
   Future<void> _navigateToNowPlayingScreen() async {
     unawaited(ref.read(splitScreenViewControllerProvider).closeSplitView());
-    await context.pushNamed(Routes.nowPlaying.name, extra: Routes.menu.name);
+    if (ref.read(whiteNoiseControllerProvider) != null) {
+      await context.pushNamed(Routes.whiteNoisePlayer.name);
+    } else {
+      await context.pushNamed(Routes.nowPlaying.name, extra: Routes.menu.name);
+    }
     unawaited(ref.read(splitScreenViewControllerProvider).openSplitView());
   }
 
@@ -232,19 +245,32 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     switch (displayItems[selectedDisplayItem]) {
       case _MainMenuDisplayItems.music:
       case _MainMenuDisplayItems.coverFlow:
-      case _MainMenuDisplayItems.artists:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
             SplitScreenType.albumArt;
         break;
+      case _MainMenuDisplayItems.artists:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.artists;
+        break;
       case _MainMenuDisplayItems.albums:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.albums;
+        break;
       case _MainMenuDisplayItems.playlists:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.playlists;
+        break;
       case _MainMenuDisplayItems.podcasts:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
-            SplitScreenType.netease;
+            SplitScreenType.podcasts;
         break;
       case _MainMenuDisplayItems.recommendations:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
-            SplitScreenType.netease;
+            SplitScreenType.recommendations;
+        break;
+      case _MainMenuDisplayItems.whiteNoise:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.whiteNoise;
         break;
       case _MainMenuDisplayItems.settings:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =

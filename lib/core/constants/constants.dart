@@ -10,7 +10,7 @@ class Constants {
   static const String androidDefaultMusicFolderPath =
       "/storage/emulated/0/Music";
   static const String defaultNotificationAlbumArtImageUrl =
-      "'https://files.radio.co/humorous-skink/staging/default-artwork.png'";
+      'https://files.radio.co/humorous-skink/staging/default-artwork.png';
 
   //If you are seeing this please consider donating to the below link😉
   static const String donationLinkUrl = "https://buymeacoffee.com/adeeteya";

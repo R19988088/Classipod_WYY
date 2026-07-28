@@ -3,7 +3,7 @@ description: "A ipod Classic Emulator"
 
 publish_to: 'none'
 
-version: 1.12.6+8053
+version: 1.13.0+13000
 
 environment:
   sdk: ^3.12.2
@@ -69,8 +69,10 @@ flutter:
 
   assets:
     - assets/
+    - assets/audio/white_noise/
     - assets/fonts/
     - assets/images/
+    - assets/images/white_noise/
 
   fonts:
     - family: Helvetica

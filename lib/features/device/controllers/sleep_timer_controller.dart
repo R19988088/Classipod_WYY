@@ -22,7 +22,14 @@ class SleepTimerController extends Notifier<int> {
   }
 
   void cycle() {
-    state = nextSleepTimerMinutes(state);
+    start(nextSleepTimerMinutes(state));
+  }
+
+  void start(int minutes) {
+    if (minutes < 0) {
+      throw ArgumentError.value(minutes, 'minutes', 'must not be negative');
+    }
+    state = minutes;
     _timer?.cancel();
     _timer = state == 0
         ? null

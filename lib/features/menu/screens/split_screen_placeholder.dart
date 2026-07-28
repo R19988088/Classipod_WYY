@@ -106,12 +106,16 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
           icon: CupertinoIcons.shuffle,
           contentText: "$songCount ${context.localization.songsScreenTitle}",
         );
-      } else if (splitScreenType == SplitScreenType.netease) {
-        splitScreenWidget = const IconPreviewWidget(
-          titleText: '网易云音乐',
-          icon: CupertinoIcons.music_albums,
-          contentText: '专辑 · 歌单 · 播客',
-        );
+      } else if ({
+        SplitScreenType.albumArt,
+        SplitScreenType.artists,
+        SplitScreenType.albums,
+        SplitScreenType.playlists,
+        SplitScreenType.podcasts,
+        SplitScreenType.recommendations,
+        SplitScreenType.whiteNoise,
+      }.contains(splitScreenType)) {
+        splitScreenWidget = AnimatedAlbumArtScroller(type: splitScreenType);
       } else if (splitScreenType == SplitScreenType.settings) {
         splitScreenWidget = const SettingsPreviewWidget();
       } else if (splitScreenType == SplitScreenType.nowPlaying) {
