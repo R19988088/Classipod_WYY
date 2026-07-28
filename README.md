@@ -12,6 +12,12 @@ joy of navigating your music library with a touch of retro charm.
 
 </div>
 
+## 版本说明
+
+本版本仅在原项目基础上增加了网易云音乐接口、白噪音和定时关闭功能。其他具体功能请查看原始项目 [adeeteya/Classipod](https://github.com/adeeteya/Classipod)。
+
+部分白噪音内容参考了 [whyiyhw/lull](https://github.com/whyiyhw/lull)。
+
 🧭 Intuitive Navigation: Navigate through your music library effortlessly using the virtual click
 wheel. Scroll, click, and feel the tactile response as you rediscover the joy of selecting your
 favorite tracks with the same ease as the original iPod.
