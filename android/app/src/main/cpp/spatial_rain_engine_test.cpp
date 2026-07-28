@@ -98,20 +98,21 @@ double LowMidRms(const std::vector<int16_t>& pcm) {
   return std::sqrt(static_cast<double>(energy / (pcm.size() / 2)));
 }
 
-double SharpnessAtLoudestWindow(const std::vector<int16_t>& pcm,
-                                int window_frames) {
+double PeakSharpness(const std::vector<int16_t>& pcm, int window_frames) {
   const auto levels = WindowRms(pcm, window_frames);
-  const auto loudest =
-      static_cast<size_t>(std::max_element(levels.begin(), levels.end()) -
-                          levels.begin());
-  const size_t start = loudest * window_frames * kChannels;
-  const size_t end = start + window_frames * kChannels;
-  long double delta = 0.0;
-  for (size_t i = start + 2; i < end; i += 2) {
-    delta += std::abs(static_cast<int>(pcm[i]) - pcm[i - 2]);
+  double sharpest = 0.0;
+  for (size_t window = 0; window < levels.size(); ++window) {
+    const size_t start = window * window_frames * kChannels;
+    const size_t end = start + window_frames * kChannels;
+    long double delta = 0.0;
+    for (size_t i = start + 2; i < end; i += 2) {
+      delta += std::abs(static_cast<int>(pcm[i]) - pcm[i - 2]);
+    }
+    sharpest = std::max(
+        sharpest, static_cast<double>(delta / (window_frames - 1)) /
+                      std::max(levels[window], 1.0));
   }
-  return static_cast<double>(delta / (window_frames - 1)) /
-         std::max(levels[loudest], 1.0);
+  return sharpest;
 }
 
 void TestRangeDeterminism() {
@@ -186,10 +187,10 @@ void TestLightningTransient() {
   Expect(sustained_windows >= 14,
          "rolling thunder does not remain elevated long enough: " +
              std::to_string(sustained_windows));
-  const double sharpness = SharpnessAtLoudestWindow(
-      pcm, classipod_spatial_rain_sample_rate() / 10);
-  Expect(sharpness < 0.72,
-         "thunder starts with a discharge-like crack: " +
+  const double sharpness =
+      PeakSharpness(pcm, classipod_spatial_rain_sample_rate() / 50);
+  Expect(sharpness > 1.05,
+         "lightning scene lacks an explosive return-stroke attack: " +
              std::to_string(sharpness));
 }
 

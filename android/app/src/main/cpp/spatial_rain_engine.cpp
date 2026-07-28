@@ -235,54 +235,102 @@ double ThunderSignal(int64_t frame,
   if (local < 0.0 || local >= 11.8) return 0.0;
   const double pan_gain = std::sqrt(std::clamp(
       channel == 0 ? (1.0 - pan) * 0.5 : (1.0 + pan) * 0.5, 0.0, 1.0));
-  const int64_t local_frame = static_cast<int64_t>(local * kSampleRate);
-  const double rise = 1.0 - std::exp(-local * 4.2);
-  const double envelope = rise * std::exp(-local * 0.22);
-  const double roll_fast =
-      0.5 + 0.5 * std::sin(local * 2.3 + strike * 0.71 + channel * 0.42);
-  const double roll_slow =
-      0.5 + 0.5 * std::sin(local * 0.7 + strike * 1.37 + channel * 1.1);
-  const double rolling = 0.22 + 0.78 * roll_fast * roll_slow;
-  const double brown =
-      0.54 * SmoothNoise(local_frame, 130, seed,
-                         0xa003ULL + strike * 41 + channel * 7) +
-      0.30 * SmoothNoise(local_frame, 340, seed,
-                         0xa004ULL + strike * 43 + channel * 11) +
-      0.16 * SmoothNoise(local_frame, 820, seed,
-                         0xa005ULL + strike * 47 + channel * 13);
-  const double sweep_phase =
-      2.0 * kPi *
-      (25.0 * local + 55.0 * (1.0 - std::exp(-local * 0.65)) / 0.65);
-  const double sub_bass =
-      (0.74 * std::sin(sweep_phase) + 0.18 * std::sin(sweep_phase * 0.5)) *
-      std::exp(-local * 0.30);
-  const double audible_roll =
-      (0.58 * std::sin(2.0 * kPi * 108.0 * local + strike * 0.31) +
-       0.29 * std::sin(2.0 * kPi * 164.0 * local + channel * 0.47) +
-       0.13 * SmoothNoise(local_frame, 62, seed,
-                          0xa006ULL + strike * 49 + channel * 19)) *
-      rolling * envelope;
+  const auto snap = [&](double start, double gain, uint64_t salt) {
+    const double time = local - start;
+    if (time < 0.0 || time >= 0.032) return 0.0;
+    const int64_t sample = static_cast<int64_t>(time * kSampleRate);
+    const double white = Bipolar(seed, sample, salt);
+    const double previous =
+        sample > 0 ? Bipolar(seed, sample - 1, salt) : white;
+    const double spike = Unit(seed, sample, salt + 1) < 0.026
+                             ? Bipolar(seed, sample, salt + 2) * 2.1
+                             : 0.0;
+    return gain * std::tanh((white - previous * 0.98) * 2.3 + spike) *
+           std::exp(-time * 145.0);
+  };
+  const auto arc_tail = [&](double time) {
+    if (time < 0.0 || time >= 0.115) return 0.0;
+    const int64_t sample = static_cast<int64_t>(time * kSampleRate);
+    const double white = Bipolar(seed, sample, 0xa020ULL + strike * 17 + channel);
+    const double previous = sample > 0
+                                ? Bipolar(seed, sample - 1,
+                                          0xa020ULL + strike * 17 + channel)
+                                : white;
+    const double high_pass = white - previous * 0.985;
+    const double impulse = Unit(seed, sample, 0xa021ULL + strike * 19 + channel) <
+                                   (time < 0.012 ? 0.34 : time < 0.05 ? 0.12 : 0.04)
+                               ? Bipolar(seed, sample,
+                                         0xa022ULL + strike * 23 + channel) *
+                                     1.4
+                               : 0.0;
+    return std::tanh((high_pass * 1.55 + impulse) * 1.2) *
+           std::exp(-time * 55.0) * 0.46;
+  };
+  const auto sub_bass = [&](double time, double gain) {
+    if (time < 0.0 || time >= 2.5) return 0.0;
+    const double phase = 2.0 * kPi *
+                         (25.0 * time +
+                          80.0 * (1.0 - std::exp(-time * 0.8)) / 0.8);
+    const double envelope = std::exp(-time * 1.2);
+    return gain * (std::sin(phase) * 0.70 + std::sin(phase * 2.0) * 0.20 +
+                   std::sin(phase * 0.5) * 0.30) *
+           envelope * std::tanh(envelope * 2.0);
+  };
+
+  // Reference chain: return stroke, arc tail, bass impact, two branch
+  // re-strikes, then independently moving rolling and distant reflections.
+  const double branch_one = 0.045 + Unit(seed, strike, 0xa030ULL) * 0.060;
+  const double branch_two = branch_one + 0.030 +
+                            Unit(seed, strike, 0xa031ULL) * 0.070;
+  double crack = snap(0.0, 1.20, 0xa010ULL + strike * 29 + channel * 3) +
+                 arc_tail(local - 0.003) +
+                 snap(branch_one, 0.68,
+                      0xa011ULL + strike * 31 + channel * 5) +
+                 snap(branch_two, 0.40,
+                      0xa012ULL + strike * 37 + channel * 7);
+  const double boom = sub_bass(local - 0.005, 1.20) +
+                      sub_bass(local - branch_one - 0.010, 0.70);
+
+  const double rumble_time = local - 0.080;
+  double rumble = 0.0;
+  if (rumble_time >= 0.0 && rumble_time < 7.0) {
+    const int64_t rumble_frame =
+        static_cast<int64_t>(rumble_time * kSampleRate);
+    const double brown =
+        0.56 * SmoothNoise(rumble_frame, 110, seed,
+                           0xa040ULL + strike * 41 + channel * 7) +
+        0.29 * SmoothNoise(rumble_frame, 310, seed,
+                           0xa041ULL + strike * 43 + channel * 11) +
+        0.15 * SmoothNoise(rumble_frame, 760, seed,
+                           0xa042ULL + strike * 47 + channel * 13);
+    const double roll_fast =
+        0.5 + 0.5 * std::sin(rumble_time * 2.3 + strike * 0.71 + channel);
+    const double roll_slow = 0.5 +
+                             0.5 * std::sin(rumble_time * 0.7 +
+                                            strike * 1.37 + channel * 3.0);
+    const double envelope = std::pow(std::max(0.0, 1.0 - rumble_time / 7.0),
+                                     1.5);
+    rumble = brown * (0.40 + 0.60 * roll_fast * roll_slow) * envelope * 5.80;
+  }
 
   double echoes = 0.0;
-  for (int echo = 0; echo < 3; ++echo) {
-    const double delay = echo == 0 ? 0.28 : echo == 1 ? 0.63 : 1.08;
-    const double echo_local = local - delay;
-    if (echo_local <= 0.0) continue;
-    const int64_t echo_frame = static_cast<int64_t>(echo_local * kSampleRate);
-    const double echo_roll =
-        0.35 + 0.65 *
-                   std::pow(0.5 +
-                                0.5 * std::sin(echo_local * (1.5 - echo * 0.2) +
-                                               strike + channel),
-                            2.0);
-    echoes += SmoothNoise(echo_frame, 390 + echo * 260, seed,
-                          0xa100ULL + strike * 53 + echo * 17 + channel * 3) *
-              echo_roll * std::exp(-echo_local * (0.38 + echo * 0.08)) *
-              (0.46 - echo * 0.08);
+  for (int echo = 0; echo < 2; ++echo) {
+    const double echo_delay = echo == 0
+                                  ? 0.18 + Unit(seed, strike, 0xa050ULL) * 0.15
+                                  : 0.40 + Unit(seed, strike, 0xa051ULL) * 0.30;
+    const double echo_time = local - echo_delay;
+    if (echo_time < 0.0 || echo_time >= (echo == 0 ? 5.0 : 7.0)) continue;
+    const int64_t echo_frame = static_cast<int64_t>(echo_time * kSampleRate);
+    const double low_pass_noise =
+        0.68 * SmoothNoise(echo_frame, 350 + echo * 170, seed,
+                           0xa060ULL + strike * 53 + echo * 17 + channel * 3) +
+        0.32 * SmoothNoise(echo_frame, 860 + echo * 290, seed,
+                           0xa061ULL + strike * 59 + echo * 19 + channel * 5);
+    echoes += low_pass_noise * std::exp(-echo_time * (0.50 + echo * 0.20)) *
+              (echo == 0 ? 0.34 : 0.22);
   }
-  return (brown * rolling * envelope * 2.05 + sub_bass * rise * 1.05 +
-          audible_roll * 0.78 + echoes) *
-         pan_gain / (0.78 + distance * 0.048);
+  return (crack + boom + rumble + echoes) * pan_gain /
+         (0.78 + distance * 0.048);
 }
 
 void AddThunder(std::vector<double>* mix,
