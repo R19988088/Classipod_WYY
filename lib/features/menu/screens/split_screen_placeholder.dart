@@ -106,22 +106,20 @@ class _SplitScreenPlaceholderState extends ConsumerState<SplitScreenPlaceholder>
           icon: CupertinoIcons.shuffle,
           contentText: "$songCount ${context.localization.songsScreenTitle}",
         );
-      } else if (splitScreenType == SplitScreenType.netease) {
-        splitScreenWidget = const IconPreviewWidget(
-          titleText: '网易云音乐',
-          icon: CupertinoIcons.music_albums,
-          contentText: '专辑 · 歌单 · 播客',
-        );
+      } else if ({
+        SplitScreenType.albumArt,
+        SplitScreenType.artists,
+        SplitScreenType.albums,
+        SplitScreenType.playlists,
+        SplitScreenType.podcasts,
+        SplitScreenType.recommendations,
+        SplitScreenType.whiteNoise,
+      }.contains(splitScreenType)) {
+        splitScreenWidget = AnimatedAlbumArtScroller(type: splitScreenType);
       } else if (splitScreenType == SplitScreenType.settings) {
         splitScreenWidget = const SettingsPreviewWidget();
       } else if (splitScreenType == SplitScreenType.nowPlaying) {
         splitScreenWidget = const NowPlayingPreviewWidget();
-      } else if (splitScreenType == SplitScreenType.whiteNoise) {
-        splitScreenWidget = const IconPreviewWidget(
-          titleText: '白噪音',
-          icon: CupertinoIcons.waveform,
-          contentText: '噪音 · 雨 · 水 · 林',
-        );
       } else if (splitScreenType == SplitScreenType.language) {
         splitScreenWidget = const LanguagePreviewWidget();
       } else if (splitScreenType == SplitScreenType.appTheme) {

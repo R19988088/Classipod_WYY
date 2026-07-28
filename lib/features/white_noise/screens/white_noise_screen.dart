@@ -69,6 +69,15 @@ class _WhiteNoiseScreenState extends ConsumerState<WhiteNoiseScreen>
                   return SettingsListTile(
                     text: category.title,
                     value: category == WhiteNoiseCategory.noise ? '白噪音' : '随机',
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(2),
+                      child: Image.asset(
+                        category.imagePath,
+                        width: 22,
+                        height: 22,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
                     heroTag: category.heroTag,
                     isSelected: selectedDisplayItem == index,
                     onTap: () => _open(category),

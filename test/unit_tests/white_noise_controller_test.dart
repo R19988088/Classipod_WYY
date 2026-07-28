@@ -55,7 +55,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'starting noise replaces the queue with a playing two hour source',
+    'starting noise uses one continuous two hour procedural source',
     () async {
       final player = _RecordingAudioPlayer();
       final container = _createContainer(player);
@@ -79,26 +79,6 @@ void main() {
       expect(nowPlaying.metadataList, hasLength(1));
       expect(nowPlaying.currentMetadata?.trackDuration, 7200000);
       expect(nowPlaying.currentMetadata?.trackName, '白噪音');
-    },
-  );
-
-  test(
-    'recorded sounds use an asset source in single track loop mode',
-    () async {
-      final player = _RecordingAudioPlayer();
-      final container = _createContainer(player);
-      addTearDown(() async {
-        container.dispose();
-        await player.dispose();
-      });
-
-      await container
-          .read(whiteNoiseControllerProvider.notifier)
-          .startSound(WhiteNoiseCategory.water, WhiteNoiseSound.ocean);
-
-      expect(player.loadedSource, isA<UriAudioSource>());
-      expect((player.loadedSource! as UriAudioSource).uri.scheme, 'asset');
-      expect(player.loadedLoopMode, LoopMode.one);
     },
   );
 
@@ -129,6 +109,30 @@ void main() {
     },
   );
 
+  test(
+    'reroll always changes sound when the category has alternatives',
+    () async {
+      final player = _RecordingAudioPlayer();
+      final container = _createContainer(player);
+      addTearDown(() async {
+        container.dispose();
+        await player.dispose();
+      });
+      final controller = container.read(whiteNoiseControllerProvider.notifier);
+
+      await controller.start(WhiteNoiseCategory.rain);
+      final first = container.read(whiteNoiseControllerProvider)!.sound;
+      await controller.reroll();
+
+      expect(
+        container.read(whiteNoiseControllerProvider)!.category,
+        WhiteNoiseCategory.rain,
+      );
+      expect(container.read(whiteNoiseControllerProvider)!.sound, isNot(first));
+      expect(player.playCount, 2);
+    },
+  );
+
   test('ordinary music metadata clears the white noise session', () async {
     final player = _RecordingAudioPlayer();
     final container = _createContainer(player);
@@ -139,7 +143,8 @@ void main() {
 
     await container
         .read(whiteNoiseControllerProvider.notifier)
-        .startSound(WhiteNoiseCategory.water, WhiteNoiseSound.ocean);
+        .startSound(WhiteNoiseCategory.indoor, WhiteNoiseSound.train);
+    expect(player.loadedSource, isA<UriAudioSource>());
     expect(player.loadedLoopMode, LoopMode.one);
     container
         .read(nowPlayingDetailsProvider.notifier)
@@ -151,6 +156,22 @@ void main() {
 
     expect(container.read(whiteNoiseControllerProvider), isNull);
     expect(player.loadedLoopMode, LoopMode.off);
+  });
+
+  test('restored cafe recording loops as an asset source', () async {
+    final player = _RecordingAudioPlayer();
+    final container = _createContainer(player);
+    addTearDown(() async {
+      container.dispose();
+      await player.dispose();
+    });
+
+    await container
+        .read(whiteNoiseControllerProvider.notifier)
+        .startSound(WhiteNoiseCategory.warm, WhiteNoiseSound.cafe);
+
+    expect(player.loadedSource, isA<UriAudioSource>());
+    expect(player.loadedLoopMode, LoopMode.one);
   });
 
   test('starting a session does not wait for playback to end', () async {

@@ -25,6 +25,16 @@ class _RecordingAudioPlayer extends AudioPlayer {
   int nextCount = 0;
   void Function()? beforeSetAudioSources;
   Error? setAudioSourcesError;
+  bool isPlaying = false;
+  bool wasPaused = false;
+  double currentVolume = 1;
+  final volumeChanges = <double>[];
+
+  @override
+  bool get playing => isPlaying;
+
+  @override
+  double get volume => currentVolume;
 
   @override
   Stream<int?> get currentIndexStream => _currentIndexController.stream;
@@ -59,6 +69,18 @@ class _RecordingAudioPlayer extends AudioPlayer {
 
   @override
   Future<void> play() async {}
+
+  @override
+  Future<void> pause() async {
+    wasPaused = true;
+    isPlaying = false;
+  }
+
+  @override
+  Future<void> setVolume(double volume) async {
+    currentVolume = volume;
+    volumeChanges.add(volume);
+  }
 
   @override
   Future<void> dispose() async {
@@ -219,9 +241,61 @@ void main() {
         );
 
     await container.read(audioPlayerServiceProvider.notifier).shuffleAllSongs();
+    await Future<void>.delayed(const Duration(milliseconds: 110));
 
     expect(player.loadedInitialIndex, isNull);
     expect(player.shuffleCount, 1);
     expect(player.nextCount, 1);
+  });
+
+  test('pausing white noise fades out before stopping', () async {
+    final player = _RecordingAudioPlayer()
+      ..isPlaying = true
+      ..currentVolume = 0.8;
+    final container = ProviderContainer(
+      overrides: [audioPlayerProvider.overrideWithValue(player)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await player.dispose();
+    });
+    container
+        .read(nowPlayingDetailsProvider.notifier)
+        .setNewMetadataList(
+          newMetadataList: [
+            MusicMetadata(trackName: 'Purr', filePath: 'procedural://purr'),
+          ],
+        );
+
+    await container.read(audioPlayerServiceProvider.notifier).pause();
+
+    expect(player.wasPaused, isTrue);
+    expect(player.volumeChanges, hasLength(greaterThan(2)));
+    expect(player.volumeChanges.first, lessThan(0.8));
+    expect(player.volumeChanges, contains(0));
+    expect(player.currentVolume, 0.8);
+  });
+
+  test('pausing ordinary music does not alter its volume', () async {
+    final player = _RecordingAudioPlayer()..isPlaying = true;
+    final container = ProviderContainer(
+      overrides: [audioPlayerProvider.overrideWithValue(player)],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await player.dispose();
+    });
+    container
+        .read(nowPlayingDetailsProvider.notifier)
+        .setNewMetadataList(
+          newMetadataList: [
+            MusicMetadata(trackName: 'Song', filePath: '/music/song.mp3'),
+          ],
+        );
+
+    await container.read(audioPlayerServiceProvider.notifier).pause();
+
+    expect(player.wasPaused, isTrue);
+    expect(player.volumeChanges, isEmpty);
   });
 }

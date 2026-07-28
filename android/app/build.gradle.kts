@@ -32,6 +32,19 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        externalNativeBuild {
+            cmake {
+                cppFlags += "-std=c++17"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     buildFeatures {
@@ -74,6 +87,9 @@ android {
             dimension = "default"
             resValue("string", "app_name", "Classipod")
             applicationIdSuffix = ""
+            ndk {
+                abiFilters += "arm64-v8a"
+            }
         }
         create("dev") {
             dimension = "default"
@@ -81,6 +97,18 @@ android {
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
         }
+    }
+}
+
+androidComponents {
+    onVariants(selector().withFlavor("default" to "production")) { variant ->
+        variant.packaging.jniLibs.excludes.addAll(
+            listOf(
+                "lib/armeabi-v7a/**",
+                "lib/x86/**",
+                "lib/x86_64/**",
+            ),
+        )
     }
 }
 

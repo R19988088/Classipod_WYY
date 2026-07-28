@@ -245,19 +245,28 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
     switch (displayItems[selectedDisplayItem]) {
       case _MainMenuDisplayItems.music:
       case _MainMenuDisplayItems.coverFlow:
-      case _MainMenuDisplayItems.artists:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
             SplitScreenType.albumArt;
         break;
+      case _MainMenuDisplayItems.artists:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.artists;
+        break;
       case _MainMenuDisplayItems.albums:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.albums;
+        break;
       case _MainMenuDisplayItems.playlists:
+        ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
+            SplitScreenType.playlists;
+        break;
       case _MainMenuDisplayItems.podcasts:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
-            SplitScreenType.netease;
+            SplitScreenType.podcasts;
         break;
       case _MainMenuDisplayItems.recommendations:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =
-            SplitScreenType.netease;
+            SplitScreenType.recommendations;
         break;
       case _MainMenuDisplayItems.whiteNoise:
         ref.read(splitScreenControllerProvider.notifier).changeSplitScreenType =

@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
@@ -111,6 +110,21 @@ class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
     unawaited(playerService.play());
   }
 
+  Future<void> reroll() async {
+    final current = state;
+    if (current == null) return;
+
+    final alternatives = current.category.sounds
+        .where((sound) => sound != current.sound)
+        .toList();
+    final sound = alternatives.isEmpty
+        ? current.sound
+        : alternatives[ref
+              .read(whiteNoiseRandomProvider)
+              .nextInt(alternatives.length)];
+    await startSound(current.category, sound);
+  }
+
   Future<void> next() async {
     await start(
       nextWhiteNoiseCategory(state?.category ?? WhiteNoiseCategory.noise),
@@ -131,7 +145,7 @@ class WhiteNoiseController extends Notifier<WhiteNoiseSession?> {
       albumArtistName: '白噪音',
       trackDuration: whiteNoiseSessionDuration.inMilliseconds,
       filePath: sound.assetPath ?? 'procedural://${sound.name}',
-      thumbnailPath: Assets.noiseImage,
+      thumbnailPath: category.imagePath,
     );
   }
 

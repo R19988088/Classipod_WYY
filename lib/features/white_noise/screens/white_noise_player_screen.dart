@@ -1,4 +1,3 @@
-import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/extensions/build_context_extensions.dart';
 import 'package:classipod/core/extensions/go_router_extensions.dart';
 import 'package:classipod/core/navigation/routes.dart';
@@ -46,6 +45,7 @@ class _WhiteNoisePlayerScreenState
             .read(settingsPreferencesControllerProvider.notifier)
             .decreaseVolume();
       case DeviceAction.select:
+        await ref.read(whiteNoiseControllerProvider.notifier).reroll();
       case DeviceAction.selectLongPress:
       case DeviceAction.seekForwardLongPress:
       case DeviceAction.seekBackwardLongPress:
@@ -89,7 +89,7 @@ class _WhiteNoisePlayerScreenState
                       imageWidth: 180,
                       tiltedImage: true,
                       flipOnEnter: true,
-                      assetPath: Assets.noiseImage,
+                      assetPath: session.category.imagePath,
                       heroTag: session.category.heroTag,
                     ),
                   ),

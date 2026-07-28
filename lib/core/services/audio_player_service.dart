@@ -12,6 +12,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart';
 
+const int _whiteNoiseFadeSteps = 8;
+const Duration _whiteNoiseFadeStepDuration = Duration(milliseconds: 45);
+
 final audioPlayerProvider = Provider<AudioPlayer>((_) {
   return AudioPlayer();
 });
@@ -35,10 +38,34 @@ class AudioPlayerServiceNotifier extends AsyncNotifier<void> {
   }
 
   Future<void> pause() async {
-    if (ref.read(audioPlayerProvider).playing) {
-      await ref.read(audioPlayerProvider).pause();
+    final player = ref.read(audioPlayerProvider);
+    if (!player.playing) return;
+
+    final path = ref.read(nowPlayingDetailsProvider).currentMetadata?.filePath;
+    if (!_isWhiteNoisePath(path)) {
+      await player.pause();
+      return;
+    }
+
+    final initialVolume = player.volume;
+    try {
+      for (var step = 1; step <= _whiteNoiseFadeSteps; step++) {
+        await player.setVolume(
+          initialVolume * (1 - step / _whiteNoiseFadeSteps),
+        );
+        if (step < _whiteNoiseFadeSteps) {
+          await Future<void>.delayed(_whiteNoiseFadeStepDuration);
+        }
+      }
+      await player.pause();
+    } finally {
+      await player.setVolume(initialVolume);
     }
   }
+
+  bool _isWhiteNoisePath(String? path) =>
+      path?.startsWith('procedural://') == true ||
+      path?.startsWith('assets/audio/white_noise/') == true;
 
   Future<void> toggleShuffleMode() async {
     state = const AsyncLoading();
