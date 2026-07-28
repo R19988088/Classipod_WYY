@@ -290,9 +290,11 @@ class _MainMenuScreenState extends ConsumerState<MainMenuScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tutorialControllerProvider.notifier).playMenuTutorial();
-    });
+    if (widget.showTutorial) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(tutorialControllerProvider.notifier).playMenuTutorial();
+      });
+    }
   }
 
   @override

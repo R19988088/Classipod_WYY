@@ -6,8 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class DeviceScreen extends ConsumerWidget {
   final Widget child;
+  final bool fullScreen;
 
-  const DeviceScreen({super.key, required this.child});
+  const DeviceScreen({super.key, required this.child, this.fullScreen = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -19,29 +20,30 @@ class DeviceScreen extends ConsumerWidget {
 
     final size = MediaQuery.sizeOf(context);
 
-    return AbsorbPointer(
-      absorbing: !isTouchScreenEnabled,
-      child: Container(
-        height: Constants.screenHeight + 10,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: context.appDeviceScreenBackgroundColor,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: context.appDeviceScreenBorderColor,
-            width: 5,
-          ),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: MediaQuery(
-            data: MediaQuery.of(context).copyWith(
-              size: Size(size.width - 40 - 10, Constants.screenHeight),
+    final screen = fullScreen
+        ? SizedBox.expand(child: child)
+        : Container(
+            height: Constants.screenHeight + 10,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: context.appDeviceScreenBackgroundColor,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: context.appDeviceScreenBorderColor,
+                width: 5,
+              ),
             ),
-            child: child,
-          ),
-        ),
-      ),
-    );
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(
+                  size: Size(size.width - 40 - 10, Constants.screenHeight),
+                ),
+                child: child,
+              ),
+            ),
+          );
+
+    return AbsorbPointer(absorbing: !isTouchScreenEnabled, child: screen);
   }
 }

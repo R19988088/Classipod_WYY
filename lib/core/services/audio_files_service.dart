@@ -4,7 +4,9 @@ import 'dart:io';
 
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/constants/online_audio_files_metadata.dart';
+import 'package:classipod/core/models/device_directory.dart';
 import 'package:classipod/core/models/music_metadata.dart';
+import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/repositories/metadata_reader_repository.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/music_source.dart';
@@ -60,10 +62,20 @@ class AudioFilesServiceNotifier
         MusicSource.local) {
       return;
     }
-    final selectedFolder = ref
+    final configuredFolder = ref
         .read(settingsPreferencesControllerProvider)
         .localMusicFolderPath;
-    if (selectedFolder.isEmpty) return;
+    final musicRoot = ref
+        .read(deviceDirectoryProvider)
+        .requireValue
+        .musicFolderPath;
+    final selectedFolder =
+        DeviceDirectory.isWithinMusicDirectory(musicRoot, configuredFolder)
+        ? configuredFolder
+        : musicRoot;
+    if (!DeviceDirectory.isWithinMusicDirectory(musicRoot, selectedFolder)) {
+      return;
+    }
     final metadataBox = Hive.box<MusicMetadata>(Constants.metadataBoxName);
     final result = Platform.isIOS
         ? await _pickFiles()

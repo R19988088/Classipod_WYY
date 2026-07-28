@@ -1,14 +1,11 @@
 import 'dart:async';
 
-import 'package:classipod/core/alerts/dialogs.dart';
 import 'package:classipod/core/constants/app_palette.dart';
 import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/extensions/build_context_extensions.dart';
-import 'package:classipod/core/navigation/routes.dart';
 import 'package:classipod/features/app_startup/controllers/splash_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
@@ -41,35 +38,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(splashControllerProvider, (_, state) async {
-      if (state.hasError) {
-        if (state.error is AudioPermissionDeniedException) {
-          await Dialogs.showInfoDialog(
-            context: context,
-            title: context.localization.audioAccessPermissionTitle,
-            content: context.localization.audioAccessPermissionContent,
-          );
-          await ref
-              .read(splashControllerProvider.notifier)
-              .requestStoragePermissions();
-        } else if (state.error is AudioPermissionPermanentlyDeniedException) {
-          await Dialogs.showInfoDialog(
-            context: context,
-            title: context
-                .localization
-                .audioAccessPermissionPermanentlyDeniedTitle,
-            content: context
-                .localization
-                .audioAccessPermissionPermanentlyDeniedContent,
-          );
-          await ref
-              .read(splashControllerProvider.notifier)
-              .requestStoragePermissions();
-        } else if (!state.hasError && context.mounted) {
-          context.goNamed(Routes.menu.name);
-        }
-      }
-    });
+    ref.watch(splashControllerProvider);
     return CupertinoPageScaffold(
       backgroundColor: AppPalette.darkScreenBackgroundGradient2,
       child: SizedBox(

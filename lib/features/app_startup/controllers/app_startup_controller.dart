@@ -5,6 +5,7 @@ import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/models/music_metadata.dart';
 import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/providers/shared_preferences_with_cache_provider.dart';
+import 'package:classipod/features/device/providers/android_tv_provider.dart';
 import 'package:classipod/features/music/playlist/models/playlist_model.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/exclude_directory_model.dart';
@@ -17,6 +18,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 
 final appStartupControllerProvider = FutureProvider<void>((ref) async {
+  final isTelevision = await ref.watch(androidTvProvider.future);
   if (!kIsWeb) {
     JustAudioMediaKit.ensureInitialized(
       android: Platform.isAndroid,
@@ -27,10 +29,14 @@ final appStartupControllerProvider = FutureProvider<void>((ref) async {
   }
   await Future.wait([
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) ...[
-      SystemChrome.setPreferredOrientations([
-        DeviceOrientation.portraitUp,
-        DeviceOrientation.portraitDown,
-      ]),
+      SystemChrome.setPreferredOrientations(
+        isTelevision
+            ? const []
+            : const [
+                DeviceOrientation.portraitUp,
+                DeviceOrientation.portraitDown,
+              ],
+      ),
       JustAudioBackground.init(
         androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
         androidNotificationChannelName: 'ClassiPod Audio playback',

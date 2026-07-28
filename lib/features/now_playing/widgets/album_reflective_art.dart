@@ -11,7 +11,6 @@ import 'package:flutter/cupertino.dart';
 class AlbumReflectiveArt extends StatefulWidget {
   final String? thumbnailPath;
   final bool isOnDevice;
-  final double reflectedImageHeight;
   final double? imageWidth;
   final String heroTag;
   final bool tiltedImage;
@@ -22,7 +21,6 @@ class AlbumReflectiveArt extends StatefulWidget {
     super.key,
     this.thumbnailPath,
     this.isOnDevice = true,
-    this.reflectedImageHeight = 50,
     this.imageWidth,
     required this.heroTag,
     this.tiltedImage = false,
@@ -143,105 +141,103 @@ class _AlbumReflectiveArtState extends State<AlbumReflectiveArt>
           alignment: Alignment.center,
           child: child,
         ),
-        child: Transform(
-          transform: transform,
-          child: Column(
-            children: [
-              Flexible(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: CupertinoColors.black.withValues(alpha: .28),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image(
-                      image: _imageProvider(),
-                      errorBuilder: (_, _, _) => Image.asset(
-                        Assets.defaultAlbumCoverImage,
-                        height: widget.imageWidth,
-                        width: widget.imageWidth ?? double.infinity,
-                        fit: (widget.imageWidth == null)
-                            ? BoxFit.fitWidth
-                            : BoxFit.scaleDown,
-                      ),
-                      height: widget.imageWidth,
-                      width: widget.imageWidth ?? double.infinity,
-                      fit: (widget.imageWidth == null)
-                          ? BoxFit.fitWidth
-                          : BoxFit.scaleDown,
-                    ),
-                  ),
-                ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            const reflectionRatio = 1 / 3;
+            final availableWidth = constraints.hasBoundedWidth
+                ? constraints.maxWidth
+                : widget.imageWidth ?? 200;
+            final availableHeight = constraints.hasBoundedHeight
+                ? constraints.maxHeight
+                : double.infinity;
+            final requestedWidth = widget.imageWidth ?? availableWidth;
+            final coverSize = min(
+              min(requestedWidth, availableWidth),
+              availableHeight / (1 + reflectionRatio),
+            );
+            final reflectionHeight = coverSize * reflectionRatio;
+
+            Widget coverImage({required double height}) => Image(
+              image: _imageProvider(),
+              errorBuilder: (_, _, _) => Image.asset(
+                Assets.defaultAlbumCoverImage,
+                height: height,
+                width: coverSize,
+                fit: BoxFit.cover,
               ),
-              FadeTransition(
-                opacity: _animation,
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    Transform.flip(
-                      flipY: true,
-                      child: Image(
-                        image: _imageProvider(),
-                        errorBuilder: (_, _, _) => Image.asset(
-                          Assets.defaultAlbumCoverImage,
-                          height: widget.reflectedImageHeight,
-                          width: widget.imageWidth != null
-                              ? (widget.imageWidth! -
-                                    widget.reflectedImageHeight)
-                              : double.infinity,
-                          alignment: Alignment.bottomCenter,
-                          fit: BoxFit.fitWidth,
-                        ),
-                        height: widget.reflectedImageHeight,
-                        width: widget.imageWidth != null
-                            ? (widget.imageWidth! - widget.reflectedImageHeight)
-                            : double.infinity,
-                        alignment: Alignment.bottomCenter,
-                        fit: BoxFit.fitWidth,
+              height: height,
+              width: coverSize,
+              alignment: Alignment.bottomCenter,
+              fit: BoxFit.cover,
+            );
+
+            return SizedBox(
+              height: coverSize + reflectionHeight,
+              width: coverSize,
+              child: Column(
+                children: [
+                  SizedBox.square(
+                    dimension: coverSize,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CupertinoColors.black.withValues(alpha: .28),
+                            blurRadius: 18,
+                            offset: const Offset(0, 10),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: coverImage(height: coverSize),
                       ),
                     ),
-                    SizedBox(
-                      height: widget.reflectedImageHeight,
-                      width: widget.imageWidth != null
-                          ? (widget.imageWidth! - widget.reflectedImageHeight)
-                          : double.infinity,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border(
-                            left: BorderSide(
-                              color: overlayBorderColor,
-                              width: 0,
-                            ),
-                            right: BorderSide(
-                              color: overlayBorderColor,
-                              width: 0,
-                            ),
-                            bottom: BorderSide(
-                              color: overlayBorderColor,
-                              width: 0,
+                  ),
+                  FadeTransition(
+                    opacity: _animation,
+                    child: SizedBox(
+                      height: reflectionHeight,
+                      width: coverSize,
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Transform.flip(
+                            flipY: true,
+                            child: coverImage(height: reflectionHeight),
+                          ),
+                          DecoratedBox(
+                            decoration: BoxDecoration(
+                              border: Border(
+                                left: BorderSide(
+                                  color: overlayBorderColor,
+                                  width: 0,
+                                ),
+                                right: BorderSide(
+                                  color: overlayBorderColor,
+                                  width: 0,
+                                ),
+                                bottom: BorderSide(
+                                  color: overlayBorderColor,
+                                  width: 0,
+                                ),
+                              ),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [overlayTopColor, overlayBottomColor],
+                              ),
                             ),
                           ),
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [overlayTopColor, overlayBottomColor],
-                          ),
-                        ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );

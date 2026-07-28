@@ -50,6 +50,7 @@ class _WhiteNoisePlayerScreenState
       case DeviceAction.seekForwardLongPress:
       case DeviceAction.seekBackwardLongPress:
       case DeviceAction.playPause:
+      case DeviceAction.playbackOptions:
       case DeviceAction.longPressEnd:
         break;
     }

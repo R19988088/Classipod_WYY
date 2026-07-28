@@ -6,6 +6,7 @@ import 'package:classipod/core/navigation/routes.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/core/widgets/empty_state_widget.dart';
 import 'package:classipod/features/device/models/device_action.dart';
+import 'package:classipod/features/device/providers/android_tv_provider.dart';
 import 'package:classipod/features/device/services/device_buttons_service_provider.dart';
 import 'package:classipod/features/now_playing/provider/now_playing_details_provider.dart';
 import 'package:classipod/features/now_playing/widgets/lyrics_view.dart';
@@ -16,7 +17,6 @@ import 'package:classipod/features/now_playing/widgets/shuffle_segmented_control
 import 'package:classipod/features/now_playing/widgets/volume_bar.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/status_bar/widgets/status_bar.dart';
-import 'package:classipod/features/tutorial/controller/tutorial_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -252,9 +252,6 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(tutorialControllerProvider.notifier).playNowPlayingTutorial();
-    });
   }
 
   @override
@@ -269,12 +266,22 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
     if (newState == null || context.router.locationNamed != routeName) {
       return;
     }
+    final isTelevision = ref.read(androidTvProvider).asData?.value ?? false;
     switch (newState) {
       case DeviceAction.menu:
         onMenuButtonPressed();
         break;
       case DeviceAction.select:
-        await onSelectPressed();
+        if (isTelevision) {
+          await ref
+              .read(deviceButtonsServiceProvider.notifier)
+              .playPauseButtonClick();
+        } else {
+          await onSelectPressed();
+        }
+        break;
+      case DeviceAction.playbackOptions:
+        if (isTelevision) await onSelectPressed();
         break;
       case DeviceAction.selectLongPress:
         onSelectLongPress();
@@ -298,6 +305,9 @@ class _NowPlayingScreenState extends ConsumerState<NowPlayingScreen> {
         seekBackwardLongPress();
         break;
       case DeviceAction.playPause:
+        await ref
+            .read(deviceButtonsServiceProvider.notifier)
+            .playPauseButtonClick();
         break;
       case DeviceAction.longPressEnd:
         onLongPressEnd();

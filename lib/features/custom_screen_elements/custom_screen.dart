@@ -93,6 +93,7 @@ mixin CustomScreen<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       case DeviceAction.seekBackwardLongPress:
         break;
       case DeviceAction.playPause:
+      case DeviceAction.playbackOptions:
         break;
       case DeviceAction.longPressEnd:
         break;

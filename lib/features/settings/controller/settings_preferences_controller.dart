@@ -10,6 +10,7 @@ import 'package:classipod/core/providers/filtered_audio_files_provider.dart';
 import 'package:classipod/core/services/audio_files_service.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/app_startup/controllers/splash_controller.dart';
+import 'package:classipod/features/device/providers/android_tv_provider.dart';
 import 'package:classipod/features/music/playlist/models/playlist_model.dart';
 import 'package:classipod/features/settings/models/app_theme.dart';
 import 'package:classipod/features/settings/models/click_wheel_sensitivity.dart';
@@ -30,6 +31,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:universal_html/html.dart';
 import 'package:volume_controller/volume_controller.dart';
 
@@ -99,7 +101,8 @@ class SettingsPreferencesControllerNotifier
         document.exitFullscreen();
       }
     } else if (io.Platform.isAndroid || io.Platform.isIOS) {
-      if (state.immersiveMode) {
+      final isTelevision = await ref.read(androidTvProvider.future);
+      if (isTelevision || state.immersiveMode) {
         await SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
       } else {
         await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -380,6 +383,10 @@ class SettingsPreferencesControllerNotifier
   }
 
   Future<void> rescanMusicFiles({bool clearPlaylists = false}) async {
+    if (state.musicSource == MusicSource.local &&
+        !await _requestStoragePermissions()) {
+      return;
+    }
     await Hive.box<MusicMetadata>(Constants.metadataBoxName).clear();
     if (clearPlaylists) {
       await Hive.box<PlaylistModel>(Constants.playlistBoxName).clear();
@@ -390,6 +397,12 @@ class SettingsPreferencesControllerNotifier
     ref.invalidate(filteredAudioFilesProvider);
     ref.invalidate(splashControllerProvider);
     ref.read(routerProvider).goNamed(Routes.splash.name);
+  }
+
+  Future<bool> _requestStoragePermissions() async {
+    if (kIsWeb || (!io.Platform.isAndroid && !io.Platform.isIOS)) return true;
+    final results = await [Permission.audio, Permission.storage].request();
+    return results.values.any((status) => status.isGranted);
   }
 
   Future<void> resetSettings() async {

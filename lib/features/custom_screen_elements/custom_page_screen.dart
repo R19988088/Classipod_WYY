@@ -96,6 +96,7 @@ mixin CustomPageScreen<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         seekBackwardLongPress();
         break;
       case DeviceAction.playPause:
+      case DeviceAction.playbackOptions:
         break;
       case DeviceAction.longPressEnd:
         onLongPressEnd();

@@ -1,7 +1,9 @@
 import 'package:classipod/core/constants/assets.dart';
 import 'package:classipod/core/constants/keys.dart';
+import 'package:classipod/features/device/providers/android_tv_provider.dart';
 import 'package:classipod/features/device/widgets/device_controls.dart';
 import 'package:classipod/features/device/widgets/device_screen.dart';
+import 'package:classipod/features/device/widgets/remote_control_scope.dart';
 import 'package:classipod/features/device/widgets/sleep_timer_button.dart';
 import 'package:classipod/features/settings/controller/settings_preferences_controller.dart';
 import 'package:classipod/features/settings/models/device_color.dart';
@@ -15,6 +17,17 @@ class DeviceFrame extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final televisionState = ref.watch(androidTvProvider);
+    if (!televisionState.hasValue) return const SizedBox.expand();
+    final isTelevision = televisionState.requireValue;
+    if (isTelevision) {
+      return RemoteControlScope(
+        child: _TelevisionViewport(
+          child: DeviceScreen(fullScreen: true, child: child),
+        ),
+      );
+    }
+
     final size = MediaQuery.sizeOf(context);
     final DeviceColor deviceColor = ref.watch(
       settingsPreferencesControllerProvider.select((e) => e.deviceColor),
@@ -131,4 +144,38 @@ class DeviceFrame extends ConsumerWidget {
       ),
     );
   }
+}
+
+class _TelevisionViewport extends StatelessWidget {
+  static const scale = 1.5;
+
+  final Widget child;
+
+  const _TelevisionViewport({required this.child});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final logicalSize = Size(
+        constraints.maxWidth / scale,
+        constraints.maxHeight / scale,
+      );
+      return SizedBox.expand(
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Transform.scale(
+            alignment: Alignment.topLeft,
+            scale: scale,
+            child: SizedBox.fromSize(
+              size: logicalSize,
+              child: MediaQuery(
+                data: MediaQuery.of(context).copyWith(size: logicalSize),
+                child: child,
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }

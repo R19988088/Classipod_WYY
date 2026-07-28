@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:classipod/core/alerts/dialogs.dart';
 import 'package:classipod/core/constants/constants.dart';
 import 'package:classipod/core/extensions/build_context_extensions.dart';
+import 'package:classipod/core/models/device_directory.dart';
 import 'package:classipod/core/navigation/routes.dart';
+import 'package:classipod/core/providers/device_directory_provider.dart';
 import 'package:classipod/core/providers/shared_preferences_with_cache_provider.dart';
 import 'package:classipod/core/services/audio_player_service.dart';
 import 'package:classipod/features/backup/services/backup_service.dart';
@@ -318,9 +320,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen>
       lockParentWindow: true,
     );
     if (path == null || !mounted) return;
+    final musicRoot = ref
+        .read(deviceDirectoryProvider)
+        .requireValue
+        .musicFolderPath;
+    final selectedPath = DeviceDirectory.isWithinMusicDirectory(musicRoot, path)
+        ? path
+        : musicRoot;
     await ref
         .read(settingsPreferencesControllerProvider.notifier)
-        .setLocalMusicFolderPath(path);
+        .setLocalMusicFolderPath(selectedPath);
     await ref
         .read(settingsPreferencesControllerProvider.notifier)
         .rescanMusicFiles();
